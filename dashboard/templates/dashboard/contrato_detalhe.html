@@ -1,0 +1,416 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Contrato {{ contrato.numero_contrato }} - Pedra Norte{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .detail-card {
+            border: 1px solid #ddd;
+            background: #fff;
+            padding: 18px;
+            margin-bottom: 20px;
+            min-height: 112px;
+        }
+
+        .detail-card .label {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 7px;
+        }
+
+        .detail-card h4 {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .detail-card .hint {
+            color: #777;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .info-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .info-line {
+            margin-bottom: 10px;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .info-value {
+            font-weight: 600;
+        }
+
+        .object-text {
+            white-space: normal;
+            line-height: 1.5;
+        }
+
+        .chart-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .chart-box.large {
+            min-height: 390px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .chart-subtitle {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+    </style>
+{% endblock %}
+
+{% block page_header %}
+    <div class="page-header">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1">Contrato {{ contrato.numero_contrato }}</h1>
+                <p class="mb-0">Detalhamento financeiro e evolução do contrato</p>
+
+                <div class="sync-info">
+                    {% if ultima_sincronizacao %}
+                        Última sincronização:
+                        {{ ultima_sincronizacao|date:"d/m/Y" }}
+                        às
+                        {{ ultima_sincronizacao|date:"H:i" }}
+                    {% else %}
+                        Nenhuma sincronização realizada ainda.
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <a href="{% url 'contratos' %}" class="btn btn-light">
+                    Voltar para contratos
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="detail-card">
+                <div class="label">Valor total</div>
+                <h4>{{ valor_total }}</h4>
+                <div class="hint">Valor total do contrato</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="detail-card">
+                <div class="label">Total medido</div>
+                <h4>{{ total_medido }}</h4>
+                <div class="hint">Valor executado em medições</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="detail-card">
+                <div class="label">Saldo estimado</div>
+                <h4>{{ saldo_estimado }}</h4>
+                <div class="hint">Valor total menos medido</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="detail-card">
+                <div class="label">% evolução</div>
+                <h4>{{ percentual_evolucao }}</h4>
+                <div class="hint">Medido sobre valor total</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="detail-card">
+                <div class="label">Total pago</div>
+                <h4>{{ total_pago }}</h4>
+                <div class="hint">Pagamentos registrados</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="detail-card">
+                <div class="label">Total faturado</div>
+                <h4>{{ total_faturado }}</h4>
+                <div class="hint">Valores faturados</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="detail-card">
+                <div class="label">A processar</div>
+                <h4>{{ total_processar }}</h4>
+                <div class="hint">Medições pendentes</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="detail-card">
+                <div class="label">Medições</div>
+                <h4>{{ total_medicoes }}</h4>
+                <div class="hint">Quantidade de medições</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-box">
+        <div class="section-title">Informações do contrato</div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="info-line">
+                    <div class="info-label">Empresa</div>
+                    <div class="info-value">{{ contrato.empresa }}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="info-line">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">{{ contrato.status }}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="info-line">
+                    <div class="info-label">Data início</div>
+                    <div class="info-value">{{ contrato.data_inicio }}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="info-line">
+                    <div class="info-label">Data fim</div>
+                    <div class="info-value">{{ contrato.data_fim }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-line mt-3">
+            <div class="info-label">Objeto</div>
+            <div class="object-text">{{ contrato.objeto }}</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="chart-box large">
+                <div class="chart-title">Medições e pagamentos por mês</div>
+                <div class="chart-subtitle">
+                    Comparativo mensal entre valor medido e valor pago
+                </div>
+
+                <canvas id="graficoMensal" height="125"></canvas>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="chart-box large">
+                <div class="chart-title">Evolução do contrato</div>
+                <div class="chart-subtitle">
+                    Percentual executado versus saldo
+                </div>
+
+                <canvas id="graficoEvolucao" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div class="section-title">Medições do contrato</div>
+
+        <table class="table table-bordered table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Nº Medição</th>
+                    <th>Mês/Ano</th>
+                    <th>Valor Medido</th>
+                    <th>Valor Pago</th>
+                    <th>Valor Liquidado</th>
+                    <th>Valor Faturado</th>
+                    <th>A Processar</th>
+                    <th>Data Pagamento</th>
+                    <th>Data Faturamento</th>
+                    <th>Situação</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for medicao in linhas_medicoes %}
+                    <tr>
+                        <td>{{ medicao.numero_medicao }}</td>
+                        <td>{{ medicao.mes_ano }}</td>
+                        <td>{{ medicao.valor_medido }}</td>
+                        <td>{{ medicao.valor_pago }}</td>
+                        <td>{{ medicao.valor_liquidado }}</td>
+                        <td>{{ medicao.valor_faturado }}</td>
+                        <td>{{ medicao.valor_a_processar }}</td>
+                        <td>{{ medicao.data_pagamento }}</td>
+                        <td>{{ medicao.data_faturamento }}</td>
+                        <td>{{ medicao.situacao }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">
+                            Nenhuma medição encontrada para este contrato.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function formatarMoeda(valor) {
+            valor = valor || 0;
+
+            return "R$ " + valor.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        const corAzul = "#2f5f8f";
+        const corVerde = "#3f7f58";
+        const corSaldo = "#d9dee3";
+
+        const meses = {{ grafico_meses|safe }};
+        const medidoMensal = {{ grafico_medido_mensal|safe }};
+        const pagoMensal = {{ grafico_pago_mensal|safe }};
+
+        new Chart(document.getElementById("graficoMensal"), {
+            type: "bar",
+            data: {
+                labels: meses,
+                datasets: [
+                    {
+                        label: "Valor medido",
+                        data: medidoMensal,
+                        backgroundColor: corAzul,
+                        borderWidth: 1
+                    },
+                    {
+                        label: "Valor pago",
+                        data: pagoMensal,
+                        backgroundColor: corVerde,
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 14,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ": " + formatarMoeda(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return "R$ " + Number(value).toLocaleString("pt-BR");
+                            }
+                        },
+                        grid: {
+                            color: "#e7e7e7"
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        const evolucaoLabels = {{ grafico_evolucao_labels|safe }};
+        const evolucaoValores = {{ grafico_evolucao_valores|safe }};
+
+        new Chart(document.getElementById("graficoEvolucao"), {
+            type: "doughnut",
+            data: {
+                labels: evolucaoLabels,
+                datasets: [{
+                    label: "Evolução",
+                    data: evolucaoValores,
+                    backgroundColor: [
+                        corVerde,
+                        corSaldo
+                    ],
+                    borderColor: "#ffffff",
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: "62%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            boxWidth: 14,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ": " + context.raw.toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }) + "%";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+{% endblock %}

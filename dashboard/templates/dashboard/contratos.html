@@ -1,0 +1,182 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Contratos - Pedra Norte{% endblock %}
+
+{% block page_header %}
+    <div class="page-header">
+        <div class="container-fluid">
+            <div>
+                <h1 class="h3 mb-1">Contratos - Pedra Norte</h1>
+                <p class="mb-0">Acompanhamento dos contratos importados da planilha</p>
+
+                <div class="sync-info">
+                    {% if ultima_sincronizacao %}
+                        Última sincronização:
+                        {{ ultima_sincronizacao|date:"d/m/Y" }}
+                        às
+                        {{ ultima_sincronizacao|date:"H:i" }}
+                    {% else %}
+                        Nenhuma sincronização realizada ainda.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Total contratado</div>
+                <h4 class="mb-0">{{ total_contratado }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Total medido</div>
+                <h4 class="mb-0">{{ total_medido }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Saldo estimado</div>
+                <h4 class="mb-0">{{ total_saldo }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Contratos</div>
+                <h4 class="mb-0">{{ total_contratos }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-info">
+        <form method="get" class="row align-items-end">
+            <div class="col-md-4">
+                <label for="contrato" class="form-label">
+                    Filtrar por contrato
+                </label>
+
+                <select id="contrato" name="contrato" class="form-select">
+                    <option value="">Todos os contratos</option>
+
+                    {% for numero_contrato in contratos_disponiveis %}
+                        <option
+                            value="{{ numero_contrato }}"
+                            {% if numero_contrato == contrato_filtro %}selected{% endif %}
+                        >
+                            {{ numero_contrato }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4 mt-3 mt-md-0">
+                <label for="status" class="form-label">
+                    Filtrar por status
+                </label>
+
+                <select id="status" name="status" class="form-select">
+                    <option value="">Todos os status</option>
+
+                    {% for status in status_disponiveis %}
+                        <option
+                            value="{{ status }}"
+                            {% if status == status_filtro %}selected{% endif %}
+                        >
+                            {{ status }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 mt-3 mt-md-0">
+                <button type="submit" class="btn btn-dark w-100">
+                    Aplicar filtro
+                </button>
+            </div>
+
+            <div class="col-md-2 mt-3 mt-md-0">
+                <a href="{% url 'contratos' %}" class="btn btn-outline-secondary w-100">
+                    Limpar filtro
+                </a>
+            </div>
+        </form>
+
+        <div class="filter-summary small-muted">
+            {% if contrato_filtro or status_filtro %}
+                Exibindo contratos com:
+
+                {% if contrato_filtro %}
+                    <strong>Contrato {{ contrato_filtro }}</strong>
+                {% endif %}
+
+                {% if contrato_filtro and status_filtro %}
+                    e
+                {% endif %}
+
+                {% if status_filtro %}
+                    <strong>Status {{ status_filtro }}</strong>
+                {% endif %}
+                .
+            {% else %}
+                Exibindo todos os contratos.
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div class="section-title">Tabela de contratos</div>
+
+        <table class="table table-bordered table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Nº Contrato</th>
+                    <th>Empresa</th>
+                    <th>Objeto</th>
+                    <th>Valor Total</th>
+                    <th>Valor Medido</th>
+                    <th>Saldo</th>
+                    <th>% Executado</th>
+                    <th>Status</th>
+                    <th>Data Início</th>
+                    <th>Data Fim</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for contrato in contratos %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'contrato_detalhe' contrato.numero_contrato %}">
+                                {{ contrato.numero_contrato }}
+                            </a>
+                        </td>
+                        <td>{{ contrato.empresa }}</td>
+                        <td class="text-limit">{{ contrato.objeto }}</td>
+                        <td>{{ contrato.valor_total }}</td>
+                        <td>{{ contrato.valor_medido }}</td>
+                        <td>{{ contrato.saldo }}</td>
+                        <td>{{ contrato.percentual_executado }}</td>
+                        <td>{{ contrato.status }}</td>
+                        <td>{{ contrato.data_inicio }}</td>
+                        <td>{{ contrato.data_fim }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">
+                            Nenhum contrato encontrado para os filtros selecionados.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}

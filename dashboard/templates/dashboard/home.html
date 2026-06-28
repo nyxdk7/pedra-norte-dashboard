@@ -1,0 +1,708 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Dashboard - Pedra Norte{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .dashboard-card {
+            border: 1px solid #ddd;
+            background: #fff;
+            padding: 18px;
+            margin-bottom: 20px;
+            min-height: 112px;
+        }
+
+        .dashboard-card .label {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 7px;
+        }
+
+        .dashboard-card h4 {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .dashboard-card .hint {
+            color: #777;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .chart-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .chart-box.large {
+            min-height: 390px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .chart-subtitle {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .dashboard-actions {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .filter-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .btn-dashboard {
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .auto-sync-info {
+            color: #666;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+    </style>
+{% endblock %}
+
+{% block page_header %}
+    <div class="page-header">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1">Dashboard Pedra Norte</h1>
+                <p class="mb-0">Resumo executivo de contratos, medições e pagamentos</p>
+
+                <div class="sync-info">
+                    {% if ultima_sincronizacao %}
+                        Última sincronização de medições:
+                        {{ ultima_sincronizacao|date:"d/m/Y" }}
+                        às
+                        {{ ultima_sincronizacao|date:"H:i" }}
+                    {% else %}
+                        Nenhuma sincronização realizada ainda.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+    <div class="filter-box">
+        <div class="section-title">Filtros do dashboard</div>
+
+        <form method="get" class="row align-items-end">
+            <div class="col-md-3">
+                <label for="contrato" class="form-label">
+                    Contrato
+                </label>
+
+                <select id="contrato" name="contrato" class="form-select">
+                    <option value="">Todos os contratos</option>
+
+                    {% for contrato in contratos_disponiveis %}
+                        <option
+                            value="{{ contrato }}"
+                            {% if contrato == contrato_filtro %}selected{% endif %}
+                        >
+                            {{ contrato }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3 mt-3 mt-md-0">
+                <label for="status" class="form-label">
+                    Status do contrato
+                </label>
+
+                <select id="status" name="status" class="form-select">
+                    <option value="">Todos os status</option>
+
+                    {% for status in status_disponiveis %}
+                        <option
+                            value="{{ status }}"
+                            {% if status == status_filtro %}selected{% endif %}
+                        >
+                            {{ status }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3 mt-3 mt-md-0">
+                <label for="situacao" class="form-label">
+                    Situação da medição
+                </label>
+
+                <select id="situacao" name="situacao" class="form-select">
+                    <option value="">Todas as situações</option>
+
+                    {% for situacao in situacoes_disponiveis %}
+                        <option
+                            value="{{ situacao }}"
+                            {% if situacao == situacao_filtro %}selected{% endif %}
+                        >
+                            {{ situacao }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 mt-3 mt-md-0">
+                <button type="submit" class="btn btn-dark w-100">
+                    Aplicar
+                </button>
+            </div>
+
+            <div class="col-md-1 mt-3 mt-md-0">
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary w-100">
+                    Limpar
+                </a>
+            </div>
+        </form>
+
+        <div class="filter-summary small-muted">
+            {% if contrato_filtro or status_filtro or situacao_filtro %}
+                Dashboard filtrado por:
+
+                {% if contrato_filtro %}
+                    <strong>Contrato {{ contrato_filtro }}</strong>
+                {% endif %}
+
+                {% if status_filtro %}
+                    {% if contrato_filtro %}, {% endif %}
+                    <strong>Status {{ status_filtro }}</strong>
+                {% endif %}
+
+                {% if situacao_filtro %}
+                    {% if contrato_filtro or status_filtro %}, {% endif %}
+                    <strong>Situação {{ situacao_filtro }}</strong>
+                {% endif %}
+                .
+            {% else %}
+                Exibindo visão geral de todos os contratos e medições.
+            {% endif %}
+        </div>
+
+        <div class="auto-sync-info" id="autoSyncInfo">
+            Sincronização automática ativa a cada 5 minutos enquanto o dashboard estiver aberto.
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="label">Total contratado</div>
+                <h4>{{ total_contratado }}</h4>
+                <div class="hint">Soma do valor total dos contratos filtrados</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="label">Total medido</div>
+                <h4>{{ total_medido }}</h4>
+                <div class="hint">Valor executado em medições</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="label">Total pago</div>
+                <h4>{{ total_pago }}</h4>
+                <div class="hint">Pagamentos já registrados</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="label">Saldo estimado</div>
+                <h4>{{ saldo_estimado }}</h4>
+                <div class="hint">Contratado menos medido</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="label">Total faturado</div>
+                <h4>{{ total_faturado }}</h4>
+                <div class="hint">Valores faturados na planilha</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="label">A processar</div>
+                <h4>{{ total_processar }}</h4>
+                <div class="hint">Medições pendentes de processamento</div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="dashboard-card">
+                <div class="label">Contratos</div>
+                <h4>{{ total_contratos }}</h4>
+                <div class="hint">Contratos no filtro atual</div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="dashboard-card">
+                <div class="label">Medições</div>
+                <h4>{{ total_medicoes }}</h4>
+                <div class="hint">Medições no filtro atual</div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="dashboard-card">
+                <div class="label">% evolução da obra</div>
+                <h4>{{ percentual_evolucao_geral }}</h4>
+                <div class="hint">Medido sobre contratado</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-actions">
+        <div class="section-title">Acesso rápido</div>
+
+        <a href="{% url 'contratos' %}" class="btn btn-dark btn-dashboard">
+            Ver contratos
+        </a>
+
+        <a href="{% url 'medicoes' %}" class="btn btn-outline-secondary btn-dashboard">
+            Ver medições
+        </a>
+
+        <a href="{% url 'sincronizar_geral' %}" class="btn btn-outline-secondary btn-dashboard">
+            Sincronizar agora
+        </a>
+
+        <div class="small-muted mt-2">
+            O sistema também tenta sincronizar automaticamente enquanto o dashboard está aberto.
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="chart-box large">
+                <div class="chart-title">Resumo financeiro geral</div>
+                <div class="chart-subtitle">
+                    Comparação entre contratado, medido, pago e saldo estimado
+                </div>
+
+                <canvas id="graficoResumoFinanceiro" height="125"></canvas>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="chart-box large">
+                <div class="chart-title">Evolução geral da obra</div>
+                <div class="chart-subtitle">
+                    Percentual executado com base no valor medido
+                </div>
+
+                <canvas id="graficoEvolucaoGeral" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="chart-box large">
+                <div class="chart-title">% evolução por contrato</div>
+                <div class="chart-subtitle">
+                    Percentual medido sobre o valor total de cada contrato
+                </div>
+
+                <canvas id="graficoEvolucaoContratos" height="125"></canvas>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="chart-box large">
+                <div class="chart-title">Contratos por status</div>
+                <div class="chart-subtitle">
+                    Distribuição dos contratos dentro do filtro atual
+                </div>
+
+                <canvas id="graficoStatusContratos" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-box">
+        <div class="chart-title">Contratado x Medido por contrato</div>
+        <div class="chart-subtitle">
+            Principais contratos por valor total, comparando valor contratado e valor medido
+        </div>
+
+        <canvas id="graficoContratos" height="115"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <div class="chart-title">Valor medido por situação</div>
+        <div class="chart-subtitle">
+            Soma do valor medido agrupada pela situação da medição
+        </div>
+
+        <canvas id="graficoSituacoes" height="100"></canvas>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function formatarMoeda(valor) {
+            valor = valor || 0;
+
+            return "R$ " + valor.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        const corAzul = "#2f5f8f";
+        const corVerde = "#3f7f58";
+        const corCinza = "#69717a";
+        const corLaranja = "#b87932";
+        const corVermelho = "#9b3f3f";
+        const corRoxo = "#5b4b80";
+        const corSaldo = "#d9dee3";
+
+        const opcoesMoeda = {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        boxWidth: 14,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ": " + formatarMoeda(context.raw);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return "R$ " + Number(value).toLocaleString("pt-BR");
+                        }
+                    },
+                    grid: {
+                        color: "#e7e7e7"
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        };
+
+        const resumoFinanceiroLabels = {{ grafico_resumo_financeiro_labels|safe }};
+        const resumoFinanceiroValores = {{ grafico_resumo_financeiro_valores|safe }};
+
+        new Chart(document.getElementById("graficoResumoFinanceiro"), {
+            type: "bar",
+            data: {
+                labels: resumoFinanceiroLabels,
+                datasets: [{
+                    label: "Valor",
+                    data: resumoFinanceiroValores,
+                    backgroundColor: [
+                        corAzul,
+                        corVerde,
+                        corCinza,
+                        corLaranja
+                    ],
+                    borderColor: "#333",
+                    borderWidth: 1
+                }]
+            },
+            options: opcoesMoeda
+        });
+
+        const evolucaoGeralLabels = {{ grafico_evolucao_geral_labels|safe }};
+        const evolucaoGeralValores = {{ grafico_evolucao_geral_valores|safe }};
+
+        new Chart(document.getElementById("graficoEvolucaoGeral"), {
+            type: "doughnut",
+            data: {
+                labels: evolucaoGeralLabels,
+                datasets: [{
+                    label: "Evolução",
+                    data: evolucaoGeralValores,
+                    backgroundColor: [
+                        corVerde,
+                        corSaldo
+                    ],
+                    borderColor: "#ffffff",
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: "62%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            boxWidth: 14,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ": " + context.raw.toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }) + "%";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const evolucaoContratosLabels = {{ grafico_evolucao_labels|safe }};
+        const evolucaoContratosValores = {{ grafico_evolucao_valores|safe }};
+
+        new Chart(document.getElementById("graficoEvolucaoContratos"), {
+            type: "bar",
+            data: {
+                labels: evolucaoContratosLabels,
+                datasets: [{
+                    label: "% evolução",
+                    data: evolucaoContratosValores,
+                    backgroundColor: corVerde,
+                    borderColor: "#333",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: "y",
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 14,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return "% evolução: " + context.raw.toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }) + "%";
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + "%";
+                            }
+                        },
+                        grid: {
+                            color: "#e7e7e7"
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        const statusLabels = {{ grafico_status_labels|safe }};
+        const statusValores = {{ grafico_status_valores|safe }};
+
+        new Chart(document.getElementById("graficoStatusContratos"), {
+            type: "doughnut",
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    label: "Contratos",
+                    data: statusValores,
+                    backgroundColor: [
+                        corAzul,
+                        corVerde,
+                        corLaranja,
+                        corCinza,
+                        corRoxo,
+                        corVermelho
+                    ],
+                    borderColor: "#ffffff",
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: "58%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            boxWidth: 14,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ": " + context.raw + " contrato(s)";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const contratosLabels = {{ grafico_contratos_labels|safe }};
+        const contratosTotal = {{ grafico_contratos_total|safe }};
+        const contratosMedido = {{ grafico_contratos_medido|safe }};
+
+        new Chart(document.getElementById("graficoContratos"), {
+            type: "bar",
+            data: {
+                labels: contratosLabels,
+                datasets: [
+                    {
+                        label: "Valor contratado",
+                        data: contratosTotal,
+                        backgroundColor: corAzul,
+                        borderWidth: 1
+                    },
+                    {
+                        label: "Valor medido",
+                        data: contratosMedido,
+                        backgroundColor: corVerde,
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                ...opcoesMoeda,
+                indexAxis: "y",
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return "R$ " + Number(value).toLocaleString("pt-BR");
+                            }
+                        },
+                        grid: {
+                            color: "#e7e7e7"
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        const situacaoLabels = {{ grafico_situacao_labels|safe }};
+        const situacaoValores = {{ grafico_situacao_valores|safe }};
+
+        new Chart(document.getElementById("graficoSituacoes"), {
+            type: "bar",
+            data: {
+                labels: situacaoLabels,
+                datasets: [{
+                    label: "Valor medido",
+                    data: situacaoValores,
+                    backgroundColor: corCinza,
+                    borderColor: "#333",
+                    borderWidth: 1
+                }]
+            },
+            options: opcoesMoeda
+        });
+
+        async function sincronizarAutomaticamente() {
+            const info = document.getElementById("autoSyncInfo");
+
+            try {
+                info.innerText = "Sincronizando automaticamente...";
+
+                const resposta = await fetch("{% url 'sincronizar_geral_api' %}");
+
+                if (!resposta.ok) {
+                    throw new Error("Erro na sincronização");
+                }
+
+                const dados = await resposta.json();
+
+                if (dados.sucesso) {
+                    const agora = new Date();
+
+                    info.innerText =
+                        "Sincronização automática concluída às " +
+                        agora.toLocaleTimeString("pt-BR", {
+                            hour: "2-digit",
+                            minute: "2-digit"
+                        }) +
+                        ". Atualize a página para ver os novos dados.";
+                } else {
+                    info.innerText = "A sincronização automática não foi concluída.";
+                }
+            } catch (erro) {
+                info.innerText = "Não foi possível sincronizar automaticamente agora.";
+            }
+        }
+
+        setInterval(sincronizarAutomaticamente, 300000);
+    </script>
+{% endblock %}

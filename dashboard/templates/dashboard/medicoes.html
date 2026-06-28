@@ -1,0 +1,227 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Medições - Pedra Norte{% endblock %}
+
+{% block page_header %}
+    <div class="page-header">
+        <div class="container-fluid">
+            <div>
+                <h1 class="h3 mb-1">Medições - Pedra Norte</h1>
+                <p class="mb-0">Dados carregados do banco local após sincronização com a planilha</p>
+
+                <div class="sync-info">
+                    {% if ultima_sincronizacao %}
+                        Última sincronização:
+                        {{ ultima_sincronizacao|date:"d/m/Y" }}
+                        às
+                        {{ ultima_sincronizacao|date:"H:i" }}
+                    {% else %}
+                        Nenhuma sincronização realizada ainda.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Total medido</div>
+                <h4 class="mb-0">{{ total_medido }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Total pago</div>
+                <h4 class="mb-0">{{ total_pago }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Total faturado</div>
+                <h4 class="mb-0">{{ total_faturado }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">A processar</div>
+                <h4 class="mb-0">{{ total_processar }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-info">
+        <form method="get" class="row align-items-end">
+            <div class="col-md-4">
+                <label for="contrato" class="form-label">
+                    Filtrar por contrato
+                </label>
+
+                <select id="contrato" name="contrato" class="form-select">
+                    <option value="">Todos os contratos</option>
+
+                    {% for contrato in contratos_disponiveis %}
+                        <option
+                            value="{{ contrato }}"
+                            {% if contrato == contrato_filtro %}selected{% endif %}
+                        >
+                            {{ contrato }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4 mt-3 mt-md-0">
+                <label for="situacao" class="form-label">
+                    Filtrar por situação
+                </label>
+
+                <select id="situacao" name="situacao" class="form-select">
+                    <option value="">Todas as situações</option>
+
+                    {% for situacao in situacoes_disponiveis %}
+                        <option
+                            value="{{ situacao }}"
+                            {% if situacao == situacao_filtro %}selected{% endif %}
+                        >
+                            {{ situacao }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 mt-3 mt-md-0">
+                <button type="submit" class="btn btn-dark w-100">
+                    Aplicar filtro
+                </button>
+            </div>
+
+            <div class="col-md-2 mt-3 mt-md-0">
+                <a href="{% url 'medicoes' %}" class="btn btn-outline-secondary w-100">
+                    Limpar filtro
+                </a>
+            </div>
+        </form>
+
+        <div class="filter-summary small-muted">
+            {% if contrato_filtro or situacao_filtro %}
+                Exibindo medições com:
+
+                {% if contrato_filtro %}
+                    <strong>Contrato {{ contrato_filtro }}</strong>
+                {% endif %}
+
+                {% if contrato_filtro and situacao_filtro %}
+                    e
+                {% endif %}
+
+                {% if situacao_filtro %}
+                    <strong>Situação {{ situacao_filtro }}</strong>
+                {% endif %}
+                .
+            {% else %}
+                Exibindo todos os contratos e todas as situações.
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="section-title">Evolução mensal do valor medido</div>
+        <canvas id="graficoMedicoes" height="90"></canvas>
+    </div>
+
+    <div class="card-info">
+        <div class="small-muted">Total de medições carregadas</div>
+        <strong>{{ total_linhas }}</strong>
+    </div>
+
+    <div class="table-container">
+        <div class="section-title">Tabela de medições</div>
+
+        <table class="table table-bordered table-hover align-middle">
+            <thead>
+                <tr>
+                    {% for coluna in cabecalho %}
+                        <th>{{ coluna }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for linha in linhas %}
+                    <tr>
+                        {% for item in linha %}
+                            <td>{{ item }}</td>
+                        {% endfor %}
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="{{ cabecalho|length }}" class="text-center text-muted">
+                            Nenhuma medição encontrada para os filtros selecionados.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const labels = {{ grafico_labels|safe }};
+        const valores = {{ grafico_valores|safe }};
+
+        const ctx = document.getElementById("graficoMedicoes");
+
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Valor medido",
+                    data: valores,
+                    backgroundColor: "#69717a",
+                    borderColor: "#333",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const valor = context.raw || 0;
+
+                                return "R$ " + valor.toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                });
+                            }
+                        }
+                    },
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return "R$ " + value.toLocaleString("pt-BR");
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+{% endblock %}
