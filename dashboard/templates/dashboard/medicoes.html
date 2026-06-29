@@ -1,6 +1,17 @@
 {% extends "dashboard/base.html" %}
+{% load formatadores %}
 
 {% block title %}Medições - Pedra Norte{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .chart-box {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+    </style>
+{% endblock %}
 
 {% block page_header %}
     <div class="page-header">
@@ -10,14 +21,13 @@
                 <p class="mb-0">Consulta das medições importadas da planilha</p>
             </div>
 
-            <div>
-                <a
-                    href="{% url 'sincronizar_geral' %}"
-                    class="btn btn-dark"
-                >
-                    Sincronizar agora
-                </a>
-            </div>
+            {% if pode_sincronizar %}
+                <div>
+                    <a href="{% url 'sincronizar_geral' %}" class="btn btn-dark">
+                        Sincronizar agora
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
@@ -31,24 +41,34 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label">Nº Contrato</label>
-                    <input
-                        type="text"
-                        name="contrato"
-                        class="form-control"
-                        value="{{ request.GET.contrato }}"
-                        placeholder="Ex: 302/2023"
-                    >
+                    <select name="contrato" class="form-select">
+                        <option value="">Todos os contratos</option>
+
+                        {% for contrato_opcao in opcoes_contratos %}
+                            <option
+                                value="{{ contrato_opcao }}"
+                                {% if request.GET.contrato == contrato_opcao %}selected{% endif %}
+                            >
+                                {{ contrato_opcao }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="col-md-4">
                     <label class="form-label">Situação</label>
-                    <input
-                        type="text"
-                        name="situacao"
-                        class="form-control"
-                        value="{{ request.GET.situacao }}"
-                        placeholder="Ex: Pago"
-                    >
+                    <select name="situacao" class="form-select">
+                        <option value="">Todas as situações</option>
+
+                        {% for situacao_opcao in opcoes_situacoes %}
+                            <option
+                                value="{{ situacao_opcao }}"
+                                {% if request.GET.situacao == situacao_opcao %}selected{% endif %}
+                            >
+                                {{ situacao_opcao }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="col-md-4">
@@ -60,12 +80,14 @@
                         Limpar filtros
                     </a>
 
-                    <a
-                        href="{% url 'exportar_medicoes_excel' %}?contrato={{ request.GET.contrato }}&situacao={{ request.GET.situacao }}"
-                        class="btn btn-outline-success"
-                    >
-                        Exportar Excel
-                    </a>
+                    {% if pode_exportar %}
+                        <a
+                            href="{% url 'exportar_medicoes_excel' %}?contrato={{ request.GET.contrato }}&situacao={{ request.GET.situacao }}"
+                            class="btn btn-outline-success"
+                        >
+                            Exportar Excel
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </form>
@@ -75,28 +97,28 @@
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">Total de medições</div>
-                <h4>{{ total_medicoes|default:medicoes|length }}</h4>
+                <h4>{{ total_medicoes }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">Valor medido</div>
-                <h4>R$ {{ total_valor_medido|default:0|floatformat:2 }}</h4>
+                <h4>{{ total_valor_medido|brl }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">Valor pago</div>
-                <h4>R$ {{ total_valor_pago|default:0|floatformat:2 }}</h4>
+                <h4>{{ total_valor_pago|brl }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">A processar</div>
-                <h4>R$ {{ total_valor_a_processar|default:0|floatformat:2 }}</h4>
+                <h4>{{ total_valor_a_processar|brl }}</h4>
             </div>
         </div>
     </div>
@@ -104,7 +126,9 @@
     {% if labels_meses and valores_medido_mes %}
         <div class="chart-container">
             <div class="section-title">Valor medido por mês</div>
-            <canvas id="graficoMedicoes"></canvas>
+            <div class="chart-box">
+                <canvas id="graficoMedicoes"></canvas>
+            </div>
         </div>
     {% endif %}
 
@@ -140,13 +164,13 @@
                         </td>
 
                         <td>{{ medicao.mes_ano }}</td>
-                        <td>R$ {{ medicao.valor_medido|floatformat:2 }}</td>
-                        <td>R$ {{ medicao.valor_pago|floatformat:2 }}</td>
+                        <td>{{ medicao.valor_medido|brl }}</td>
+                        <td>{{ medicao.valor_pago|brl }}</td>
                         <td>{{ medicao.data_pagamento }}</td>
-                        <td>R$ {{ medicao.valor_liquidado|floatformat:2 }}</td>
-                        <td>R$ {{ medicao.valor_faturado|floatformat:2 }}</td>
+                        <td>{{ medicao.valor_liquidado|brl }}</td>
+                        <td>{{ medicao.valor_faturado|brl }}</td>
                         <td>{{ medicao.data_faturamento }}</td>
-                        <td>R$ {{ medicao.valor_a_processar|floatformat:2 }}</td>
+                        <td>{{ medicao.valor_a_processar|brl }}</td>
 
                         <td>
                             {% if medicao.situacao == "Pago" %}
@@ -197,9 +221,17 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                display: true
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return new Intl.NumberFormat("pt-BR", {
+                                            style: "currency",
+                                            currency: "BRL"
+                                        }).format(context.raw || 0);
+                                    }
+                                }
                             }
                         },
                         scales: {

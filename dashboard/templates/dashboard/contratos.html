@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load formatadores %}
 
 {% block title %}Contratos - Pedra Norte{% endblock %}
 
@@ -10,14 +11,13 @@
                 <p class="mb-0">Consulta dos contratos importados da planilha</p>
             </div>
 
-            <div>
-                <a
-                    href="{% url 'sincronizar_geral' %}"
-                    class="btn btn-dark"
-                >
-                    Sincronizar agora
-                </a>
-            </div>
+            {% if pode_sincronizar %}
+                <div>
+                    <a href="{% url 'sincronizar_geral' %}" class="btn btn-dark">
+                        Sincronizar agora
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
@@ -31,24 +31,34 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label">Nº Contrato</label>
-                    <input
-                        type="text"
-                        name="contrato"
-                        class="form-control"
-                        value="{{ request.GET.contrato }}"
-                        placeholder="Ex: 302/2023"
-                    >
+                    <select name="contrato" class="form-select">
+                        <option value="">Todos os contratos</option>
+
+                        {% for contrato_opcao in opcoes_contratos %}
+                            <option
+                                value="{{ contrato_opcao }}"
+                                {% if request.GET.contrato == contrato_opcao %}selected{% endif %}
+                            >
+                                {{ contrato_opcao }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="col-md-4">
                     <label class="form-label">Status</label>
-                    <input
-                        type="text"
-                        name="status"
-                        class="form-control"
-                        value="{{ request.GET.status }}"
-                        placeholder="Ex: Em execução"
-                    >
+                    <select name="status" class="form-select">
+                        <option value="">Todos os status</option>
+
+                        {% for status_opcao in opcoes_status %}
+                            <option
+                                value="{{ status_opcao }}"
+                                {% if request.GET.status == status_opcao %}selected{% endif %}
+                            >
+                                {{ status_opcao }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="col-md-4">
@@ -60,12 +70,14 @@
                         Limpar filtros
                     </a>
 
-                    <a
-                        href="{% url 'exportar_contratos_excel' %}?contrato={{ request.GET.contrato }}&status={{ request.GET.status }}"
-                        class="btn btn-outline-success"
-                    >
-                        Exportar Excel
-                    </a>
+                    {% if pode_exportar %}
+                        <a
+                            href="{% url 'exportar_contratos_excel' %}?contrato={{ request.GET.contrato }}&status={{ request.GET.status }}"
+                            class="btn btn-outline-success"
+                        >
+                            Exportar Excel
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </form>
@@ -75,28 +87,28 @@
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">Total de contratos</div>
-                <h4>{{ total_contratos|default:contratos|length }}</h4>
+                <h4>{{ total_contratos }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">Valor contratual</div>
-                <h4>R$ {{ total_valor_contratual|default:0|floatformat:2 }}</h4>
+                <h4>{{ total_valor_contratual|brl }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">Valor total</div>
-                <h4>R$ {{ total_valor_total|default:0|floatformat:2 }}</h4>
+                <h4>{{ total_valor_total|brl }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">Total medido</div>
-                <h4>R$ {{ total_medido|default:0|floatformat:2 }}</h4>
+                <h4>{{ total_medido|brl }}</h4>
             </div>
         </div>
     </div>
@@ -140,11 +152,11 @@
                             {{ contrato.objeto }}
                         </td>
 
-                        <td>R$ {{ contrato.valor_contratual|floatformat:2 }}</td>
-                        <td>R$ {{ contrato.total_aditivos|floatformat:2 }}</td>
-                        <td>R$ {{ contrato.total_reajustamento|floatformat:2 }}</td>
-                        <td>R$ {{ contrato.reequilibrio|floatformat:2 }}</td>
-                        <td>R$ {{ contrato.valor_total|floatformat:2 }}</td>
+                        <td>{{ contrato.valor_contratual|brl }}</td>
+                        <td>{{ contrato.total_aditivos|brl }}</td>
+                        <td>{{ contrato.total_reajustamento|brl }}</td>
+                        <td>{{ contrato.reequilibrio|brl }}</td>
+                        <td>{{ contrato.valor_total|brl }}</td>
                         <td>{{ contrato.garantia }}</td>
                         <td>{{ contrato.data_inicio }}</td>
                         <td>{{ contrato.data_fim }}</td>
@@ -159,9 +171,9 @@
                             {% endif %}
                         </td>
 
-                        <td>{{ contrato.percentual_executado|floatformat:2 }}%</td>
-                        <td>R$ {{ contrato.valor_msm_a_executar|floatformat:2 }}</td>
-                        <td>R$ {{ contrato.valor_csm_a_executar|floatformat:2 }}</td>
+                        <td>{{ contrato.percentual_executado|percentual_br }}</td>
+                        <td>{{ contrato.valor_msm_a_executar|brl }}</td>
+                        <td>{{ contrato.valor_csm_a_executar|brl }}</td>
                     </tr>
                 {% empty %}
                     <tr>

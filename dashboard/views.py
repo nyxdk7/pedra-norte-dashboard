@@ -1,350 +1,290 @@
-from io import BytesIO
-
-from django.http import HttpResponse
 import json
-from collections import defaultdict
 from decimal import Decimal
+from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.shortcuts import redirect, render
-from django.utils import timezone
+from django.db.models import Sum
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 
-from .models import Contrato, Medicao, SincronizacaoHistorico
-from .services.google_sheets import read_sheet_range
-from .services.importador_contratos import importar_contratos
-from .services.importador_geral import sincronizar_tudo
-from .services.importador_medicoes import importar_medicoes
+from dashboard.models import Contrato, Medicao, SincronizacaoHistorico
+from dashboard.permissoes import (
+    GRUPO_ADMINISTRADOR,
+    GRUPO_DIRETORIA,
+    GRUPO_FINANCEIRO,
+    permissao_grupo_required,
+    permissao_grupo_required_json,
+)
 from dashboard.services.exports.excel_exporter import (
     exportar_contratos_excel,
     exportar_medicoes_excel,
 )
+from dashboard.services.google_sheets import read_sheet_range
+from dashboard.services.importador_contratos import importar_contratos
+from dashboard.services.importador_geral import sincronizar_tudo
+from dashboard.services.importador_medicoes import importar_medicoes
 
 
-SPREADSHEET_ID = "1UDfxZbHEtbiIzB7HpxGg-nLSN1aJRrafi7blwiLjVMU"
+def decimal_para_float(valor):
+    if valor is None:
+        return 0
+
+    if isinstance(valor, Decimal):
+        return float(valor)
+
+    return float(valor or 0)
 
 
-def formatar_moeda(valor):
-    valor = Decimal(valor or 0)
-
-    texto = f"{valor:,.2f}"
-    texto = texto.replace(",", "X").replace(".", ",").replace("X", ".")
-
-    return f"R$ {texto}"
+def somar_queryset(queryset, campo):
+    resultado = queryset.aggregate(total=Sum(campo))
+    return resultado["total"] or Decimal("0")
 
 
-def formatar_percentual(valor):
-    valor = Decimal(valor or 0)
+def gerar_dados_por_mes(medicoes_queryset):
+    dados_por_mes = {}
 
-    texto = f"{valor:,.2f}"
-    texto = texto.replace(",", "X").replace(".", ",").replace("X", ".")
+    for medicao in medicoes_queryset:
+        mes = medicao.mes_ano or "Não informado"
 
-    return f"{texto}%"
+        if mes not in dados_por_mes:
+            dados_por_mes[mes] = {
+                "medido": Decimal("0"),
+                "pago": Decimal("0"),
+                "liquidado": Decimal("0"),
+                "faturado": Decimal("0"),
+                "a_processar": Decimal("0"),
+            }
 
+        dados_por_mes[mes]["medido"] += medicao.valor_medido or Decimal("0")
+        dados_por_mes[mes]["pago"] += medicao.valor_pago or Decimal("0")
+        dados_por_mes[mes]["liquidado"] += medicao.valor_liquidado or Decimal("0")
+        dados_por_mes[mes]["faturado"] += medicao.valor_faturado or Decimal("0")
+        dados_por_mes[mes]["a_processar"] += medicao.valor_a_processar or Decimal("0")
 
-def obter_ultima_sincronizacao_medicoes():
-    ultima_medicao_atualizada = (
-        Medicao.objects
-        .order_by("-atualizado_em")
-        .first()
-    )
+    labels = list(dados_por_mes.keys())
 
-    if not ultima_medicao_atualizada:
-        return None
+    valores_medido = [
+        decimal_para_float(dados_por_mes[mes]["medido"])
+        for mes in labels
+    ]
 
-    return timezone.localtime(ultima_medicao_atualizada.atualizado_em)
+    valores_pago = [
+        decimal_para_float(dados_por_mes[mes]["pago"])
+        for mes in labels
+    ]
 
+    valores_liquidado = [
+        decimal_para_float(dados_por_mes[mes]["liquidado"])
+        for mes in labels
+    ]
 
-def obter_ultima_sincronizacao_contratos():
-    ultimo_contrato_atualizado = (
-        Contrato.objects
-        .order_by("-atualizado_em")
-        .first()
-    )
+    valores_faturado = [
+        decimal_para_float(dados_por_mes[mes]["faturado"])
+        for mes in labels
+    ]
 
-    if not ultimo_contrato_atualizado:
-        return None
+    valores_a_processar = [
+        decimal_para_float(dados_por_mes[mes]["a_processar"])
+        for mes in labels
+    ]
 
-    return timezone.localtime(ultimo_contrato_atualizado.atualizado_em)
+    return {
+        "labels": labels,
+        "valores_medido": valores_medido,
+        "valores_pago": valores_pago,
+        "valores_liquidado": valores_liquidado,
+        "valores_faturado": valores_faturado,
+        "valores_a_processar": valores_a_processar,
+    }
 
 
 @login_required
 def home(request):
-    contrato_filtro = request.GET.get("contrato", "").strip()
-    status_filtro = request.GET.get("status", "").strip()
-    situacao_filtro = request.GET.get("situacao", "").strip()
+    contratos_queryset = Contrato.objects.all()
+    medicoes_queryset = Medicao.objects.all()
 
-    contratos_query = Contrato.objects.all().order_by("numero_contrato")
-    medicoes_query = Medicao.objects.all().order_by("id")
-
-    contratos_disponiveis = (
-        Contrato.objects
-        .exclude(numero_contrato="")
-        .values_list("numero_contrato", flat=True)
-        .distinct()
-        .order_by("numero_contrato")
-    )
-
-    status_disponiveis = (
-        Contrato.objects
-        .exclude(status="")
-        .values_list("status", flat=True)
-        .distinct()
-        .order_by("status")
-    )
-
-    situacoes_disponiveis = (
-        Medicao.objects
-        .exclude(situacao="")
-        .values_list("situacao", flat=True)
-        .distinct()
-        .order_by("situacao")
-    )
+    contrato_filtro = request.GET.get("contrato", "")
+    status_filtro = request.GET.get("status", "")
+    situacao_filtro = request.GET.get("situacao", "")
 
     if contrato_filtro:
-        contratos_query = contratos_query.filter(numero_contrato=contrato_filtro)
-        medicoes_query = medicoes_query.filter(numero_contrato=contrato_filtro)
-
-    if status_filtro:
-        contratos_query = contratos_query.filter(status=status_filtro)
-
-        contratos_filtrados_por_status = list(
-            contratos_query.values_list("numero_contrato", flat=True)
+        contratos_queryset = contratos_queryset.filter(
+            numero_contrato__icontains=contrato_filtro
+        )
+        medicoes_queryset = medicoes_queryset.filter(
+            numero_contrato__icontains=contrato_filtro
         )
 
-        medicoes_query = medicoes_query.filter(
-            numero_contrato__in=contratos_filtrados_por_status
+    if status_filtro:
+        contratos_queryset = contratos_queryset.filter(
+            status__icontains=status_filtro
         )
 
     if situacao_filtro:
-        medicoes_query = medicoes_query.filter(situacao=situacao_filtro)
-
-    medicoes = list(medicoes_query)
-    contratos = list(contratos_query)
-
-    total_medido = Decimal("0")
-    total_pago = Decimal("0")
-    total_faturado = Decimal("0")
-    total_processar = Decimal("0")
-    total_contratado = Decimal("0")
-
-    medido_por_situacao = defaultdict(Decimal)
-    contratos_por_status = defaultdict(int)
-    medido_por_contrato = defaultdict(Decimal)
-
-    for medicao in medicoes:
-        total_medido += medicao.valor_medido
-        total_pago += medicao.valor_pago
-        total_faturado += medicao.valor_faturado
-        total_processar += medicao.valor_a_processar
-
-        situacao = medicao.situacao or "Sem situação"
-        medido_por_situacao[situacao] += medicao.valor_medido
-
-        if medicao.numero_contrato:
-            medido_por_contrato[medicao.numero_contrato] += medicao.valor_medido
-
-    contratos_para_grafico = []
-    evolucao_por_contrato = []
-
-    for contrato in contratos:
-        total_contratado += contrato.valor_total
-
-        status = contrato.status or "Sem status"
-        contratos_por_status[status] += 1
-
-        valor_medido_contrato = medido_por_contrato[contrato.numero_contrato]
-
-        percentual_evolucao = Decimal("0")
-
-        if contrato.valor_total > 0:
-            percentual_evolucao = (
-                valor_medido_contrato / contrato.valor_total
-            ) * 100
-
-        contratos_para_grafico.append(
-            {
-                "numero": contrato.numero_contrato,
-                "valor_total": contrato.valor_total,
-                "valor_medido": valor_medido_contrato,
-            }
+        medicoes_queryset = medicoes_queryset.filter(
+            situacao__icontains=situacao_filtro
         )
 
-        evolucao_por_contrato.append(
-            {
-                "numero": contrato.numero_contrato,
-                "percentual": percentual_evolucao,
-            }
-        )
+    total_contratos = contratos_queryset.count()
+    total_medicoes = medicoes_queryset.count()
 
-    saldo_estimado = total_contratado - total_medido
-
-    percentual_evolucao_geral = Decimal("0")
-
-    if total_contratado > 0:
-        percentual_evolucao_geral = (total_medido / total_contratado) * 100
-
-    percentual_saldo_geral = Decimal("100") - percentual_evolucao_geral
-
-    if percentual_saldo_geral < 0:
-        percentual_saldo_geral = Decimal("0")
-
-    total_medicoes = len(medicoes)
-    total_contratos = len(contratos)
-
-    contratos_para_grafico = sorted(
-        contratos_para_grafico,
-        key=lambda item: item["valor_total"],
-        reverse=True,
-    )[:8]
-
-    evolucao_por_contrato = sorted(
-        evolucao_por_contrato,
-        key=lambda item: item["percentual"],
-        reverse=True,
-    )[:8]
-
-    grafico_resumo_financeiro_labels = [
-        "Contratado",
-        "Medido",
-        "Pago",
-        "Saldo estimado",
-    ]
-
-    grafico_resumo_financeiro_valores = [
-        float(total_contratado),
-        float(total_medido),
-        float(total_pago),
-        float(saldo_estimado),
-    ]
-
-    grafico_situacao_labels = list(medido_por_situacao.keys())
-    grafico_situacao_valores = [
-        float(valor) for valor in medido_por_situacao.values()
-    ]
-
-    grafico_status_labels = list(contratos_por_status.keys())
-    grafico_status_valores = list(contratos_por_status.values())
-
-    grafico_contratos_labels = [
-        item["numero"] for item in contratos_para_grafico
-    ]
-
-    grafico_contratos_total = [
-        float(item["valor_total"]) for item in contratos_para_grafico
-    ]
-
-    grafico_contratos_medido = [
-        float(item["valor_medido"]) for item in contratos_para_grafico
-    ]
-
-    grafico_evolucao_labels = [
-        item["numero"] for item in evolucao_por_contrato
-    ]
-
-    grafico_evolucao_valores = [
-        round(float(item["percentual"]), 2) for item in evolucao_por_contrato
-    ]
-
-    grafico_evolucao_geral_labels = [
-        "Executado",
-        "Saldo",
-    ]
-
-    grafico_evolucao_geral_valores = [
-        round(float(percentual_evolucao_geral), 2),
-        round(float(percentual_saldo_geral), 2),
-    ]
-
-    return render(
-        request,
-        "dashboard/home.html",
-        {
-            "total_contratado": formatar_moeda(total_contratado),
-            "total_medido": formatar_moeda(total_medido),
-            "total_pago": formatar_moeda(total_pago),
-            "saldo_estimado": formatar_moeda(saldo_estimado),
-            "total_faturado": formatar_moeda(total_faturado),
-            "total_processar": formatar_moeda(total_processar),
-            "total_medicoes": total_medicoes,
-            "total_contratos": total_contratos,
-            "percentual_evolucao_geral": formatar_percentual(
-                percentual_evolucao_geral
-            ),
-            "ultima_sincronizacao": obter_ultima_sincronizacao_medicoes(),
-            "contrato_filtro": contrato_filtro,
-            "status_filtro": status_filtro,
-            "situacao_filtro": situacao_filtro,
-            "contratos_disponiveis": contratos_disponiveis,
-            "status_disponiveis": status_disponiveis,
-            "situacoes_disponiveis": situacoes_disponiveis,
-            "grafico_resumo_financeiro_labels": json.dumps(
-                grafico_resumo_financeiro_labels,
-                ensure_ascii=False,
-            ),
-            "grafico_resumo_financeiro_valores": json.dumps(
-                grafico_resumo_financeiro_valores,
-            ),
-            "grafico_situacao_labels": json.dumps(
-                grafico_situacao_labels,
-                ensure_ascii=False,
-            ),
-            "grafico_situacao_valores": json.dumps(
-                grafico_situacao_valores,
-            ),
-            "grafico_status_labels": json.dumps(
-                grafico_status_labels,
-                ensure_ascii=False,
-            ),
-            "grafico_status_valores": json.dumps(
-                grafico_status_valores,
-            ),
-            "grafico_contratos_labels": json.dumps(
-                grafico_contratos_labels,
-                ensure_ascii=False,
-            ),
-            "grafico_contratos_total": json.dumps(
-                grafico_contratos_total,
-            ),
-            "grafico_contratos_medido": json.dumps(
-                grafico_contratos_medido,
-            ),
-            "grafico_evolucao_labels": json.dumps(
-                grafico_evolucao_labels,
-                ensure_ascii=False,
-            ),
-            "grafico_evolucao_valores": json.dumps(
-                grafico_evolucao_valores,
-            ),
-            "grafico_evolucao_geral_labels": json.dumps(
-                grafico_evolucao_geral_labels,
-                ensure_ascii=False,
-            ),
-            "grafico_evolucao_geral_valores": json.dumps(
-                grafico_evolucao_geral_valores,
-            ),
-        },
+    total_valor_contratual = somar_queryset(
+        contratos_queryset,
+        "valor_contratual",
     )
+    total_valor_total = somar_queryset(
+        contratos_queryset,
+        "valor_total",
+    )
+    total_medido = somar_queryset(
+        medicoes_queryset,
+        "valor_medido",
+    )
+    total_pago = somar_queryset(
+        medicoes_queryset,
+        "valor_pago",
+    )
+    total_liquidado = somar_queryset(
+        medicoes_queryset,
+        "valor_liquidado",
+    )
+    total_faturado = somar_queryset(
+        medicoes_queryset,
+        "valor_faturado",
+    )
+    total_a_processar = somar_queryset(
+        medicoes_queryset,
+        "valor_a_processar",
+    )
+
+    percentual_execucao_geral = Decimal("0")
+
+    if total_valor_total and total_valor_total > 0:
+        percentual_execucao_geral = (total_medido / total_valor_total) * 100
+
+    dados_mes = gerar_dados_por_mes(medicoes_queryset)
+
+    labels_meses = dados_mes["labels"]
+    valores_medido_mes = dados_mes["valores_medido"]
+    valores_pago_mes = dados_mes["valores_pago"]
+    valores_liquidado_mes = dados_mes["valores_liquidado"]
+    valores_faturado_mes = dados_mes["valores_faturado"]
+    valores_a_processar_mes = dados_mes["valores_a_processar"]
+
+    contratos_grafico = []
+    valores_contratados_grafico = []
+    valores_medidos_grafico = []
+    percentuais_contratos = []
+
+    for contrato in contratos_queryset:
+        total_medido_contrato = medicoes_queryset.filter(
+            numero_contrato=contrato.numero_contrato
+        ).aggregate(
+            total=Sum("valor_medido")
+        )["total"] or Decimal("0")
+
+        contratos_grafico.append(contrato.numero_contrato)
+        valores_contratados_grafico.append(
+            decimal_para_float(contrato.valor_total)
+        )
+        valores_medidos_grafico.append(
+            decimal_para_float(total_medido_contrato)
+        )
+        percentuais_contratos.append(
+            decimal_para_float(contrato.percentual_executado)
+        )
+
+    status_contagem = {}
+
+    for contrato in contratos_queryset:
+        status_nome = contrato.status or "Não informado"
+        status_contagem[status_nome] = status_contagem.get(status_nome, 0) + 1
+
+    situacao_contagem = {}
+
+    for medicao in medicoes_queryset:
+        situacao_nome = medicao.situacao or "Não informado"
+        situacao_contagem[situacao_nome] = situacao_contagem.get(situacao_nome, 0) + 1
+
+    ultimo_historico = SincronizacaoHistorico.objects.first()
+
+    context = {
+        "contratos": contratos_queryset,
+        "medicoes": medicoes_queryset,
+        "total_contratos": total_contratos,
+        "total_medicoes": total_medicoes,
+        "total_valor_contratual": total_valor_contratual,
+        "total_valor_total": total_valor_total,
+        "total_medido": total_medido,
+        "total_pago": total_pago,
+        "total_liquidado": total_liquidado,
+        "total_faturado": total_faturado,
+        "total_a_processar": total_a_processar,
+        "percentual_execucao_geral": percentual_execucao_geral,
+        "ultimo_historico": ultimo_historico,
+        "labels_meses": json.dumps(labels_meses, ensure_ascii=False),
+        "valores_medido_mes": json.dumps(valores_medido_mes, ensure_ascii=False),
+        "valores_pago_mes": json.dumps(valores_pago_mes, ensure_ascii=False),
+        "valores_liquidado_mes": json.dumps(valores_liquidado_mes, ensure_ascii=False),
+        "valores_faturado_mes": json.dumps(valores_faturado_mes, ensure_ascii=False),
+        "valores_a_processar_mes": json.dumps(valores_a_processar_mes, ensure_ascii=False),
+        "contratos_grafico": json.dumps(contratos_grafico, ensure_ascii=False),
+        "valores_contratados_grafico": json.dumps(
+            valores_contratados_grafico,
+            ensure_ascii=False,
+        ),
+        "valores_medidos_grafico": json.dumps(
+            valores_medidos_grafico,
+            ensure_ascii=False,
+        ),
+        "percentuais_contratos": json.dumps(
+            percentuais_contratos,
+            ensure_ascii=False,
+        ),
+        "labels_status": json.dumps(list(status_contagem.keys()), ensure_ascii=False),
+        "valores_status": json.dumps(list(status_contagem.values()), ensure_ascii=False),
+        "labels_situacao": json.dumps(list(situacao_contagem.keys()), ensure_ascii=False),
+        "valores_situacao": json.dumps(list(situacao_contagem.values()), ensure_ascii=False),
+    }
+
+    return render(request, "dashboard/home.html", context)
 
 
 @login_required
 def teste_sheets(request):
-    dados = read_sheet_range(
-        spreadsheet_id=SPREADSHEET_ID,
-        range_name="'Medições'!A1:K500",
-    )
+    try:
+        spreadsheet_id = "1UDfxZbHEtbiIzB7HpxGg-nLSN1aJRrafi7blwiLjVMU"
+        range_name = "'Medições'!A1:K5"
 
-    return JsonResponse(
-        {
-            "total_linhas": len(dados),
-            "dados": dados,
-        },
-        json_dumps_params={"ensure_ascii": False},
-    )
+        dados = read_sheet_range(
+            spreadsheet_id=spreadsheet_id,
+            range_name=range_name,
+        )
+
+        return JsonResponse(
+            {
+                "sucesso": True,
+                "dados": dados,
+            },
+            json_dumps_params={"ensure_ascii": False},
+        )
+
+    except Exception as erro:
+        return JsonResponse(
+            {
+                "sucesso": False,
+                "erro": str(erro),
+            },
+            status=500,
+            json_dumps_params={"ensure_ascii": False},
+        )
 
 
-@login_required
+@permissao_grupo_required(
+    [GRUPO_ADMINISTRADOR],
+    mensagem="Apenas administradores podem sincronizar a planilha.",
+)
 def sincronizar_geral(request):
     resultado = sincronizar_tudo(
         usuario=request.user,
@@ -365,7 +305,9 @@ def sincronizar_geral(request):
     return redirect("home")
 
 
-@login_required
+@permissao_grupo_required_json(
+    [GRUPO_ADMINISTRADOR],
+)
 def sincronizar_geral_api(request):
     resultado = sincronizar_tudo(
         usuario=request.user,
@@ -383,42 +325,10 @@ def sincronizar_geral_api(request):
     )
 
 
-@login_required
-def sincronizar_medicoes(request):
-    resultado = importar_medicoes()
-
-    if resultado["sucesso"]:
-        messages.success(
-            request,
-            f"{resultado['total_importado']} medições sincronizadas com sucesso.",
-        )
-    else:
-        messages.error(
-            request,
-            resultado["mensagem"],
-        )
-
-    return redirect("medicoes")
-
-
-@login_required
-def sincronizar_contratos(request):
-    resultado = importar_contratos()
-
-    if resultado["sucesso"]:
-        messages.success(
-            request,
-            f"{resultado['total_importado']} contratos sincronizados com sucesso.",
-        )
-    else:
-        messages.error(
-            request,
-            resultado["mensagem"],
-        )
-
-    return redirect("contratos")
-
-@login_required
+@permissao_grupo_required(
+    [GRUPO_ADMINISTRADOR, GRUPO_DIRETORIA],
+    mensagem="Apenas administradores e diretoria podem acessar o histórico.",
+)
 def historico_sincronizacoes(request):
     historicos = SincronizacaoHistorico.objects.select_related(
         "usuario"
@@ -432,319 +342,247 @@ def historico_sincronizacoes(request):
         },
     )
 
+
 @login_required
 def contratos(request):
-    contrato_filtro = request.GET.get("contrato", "").strip()
-    status_filtro = request.GET.get("status", "").strip()
+    contratos_queryset = Contrato.objects.all()
 
-    contratos_query = Contrato.objects.all().order_by("numero_contrato")
+    numero_contrato = request.GET.get("contrato", "")
+    status = request.GET.get("status", "")
 
-    contratos_disponiveis = (
-        Contrato.objects
-        .exclude(numero_contrato="")
-        .values_list("numero_contrato", flat=True)
-        .distinct()
-        .order_by("numero_contrato")
-    )
-
-    status_disponiveis = (
-        Contrato.objects
-        .exclude(status="")
-        .values_list("status", flat=True)
-        .distinct()
-        .order_by("status")
-    )
-
-    if contrato_filtro:
-        contratos_query = contratos_query.filter(numero_contrato=contrato_filtro)
-
-    if status_filtro:
-        contratos_query = contratos_query.filter(status=status_filtro)
-
-    contratos_lista = []
-
-    total_contratado = Decimal("0")
-    total_medido = Decimal("0")
-    total_saldo = Decimal("0")
-
-    for contrato in contratos_query:
-        medido_contrato = Decimal("0")
-
-        medicoes_contrato = Medicao.objects.filter(
-            numero_contrato=contrato.numero_contrato
+    if numero_contrato:
+        contratos_queryset = contratos_queryset.filter(
+            numero_contrato__icontains=numero_contrato
         )
 
-        for medicao in medicoes_contrato:
-            medido_contrato += medicao.valor_medido
-
-        saldo = contrato.valor_total - medido_contrato
-
-        total_contratado += contrato.valor_total
-        total_medido += medido_contrato
-        total_saldo += saldo
-
-        contratos_lista.append(
-            {
-                "numero_contrato": contrato.numero_contrato,
-                "empresa": contrato.empresa,
-                "objeto": contrato.objeto,
-                "valor_total": formatar_moeda(contrato.valor_total),
-                "valor_medido": formatar_moeda(medido_contrato),
-                "saldo": formatar_moeda(saldo),
-                "status": contrato.status,
-                "percentual_executado": formatar_percentual(
-                    contrato.percentual_executado
-                ),
-                "data_inicio": contrato.data_inicio,
-                "data_fim": contrato.data_fim,
-            }
+    if status:
+        contratos_queryset = contratos_queryset.filter(
+            status__icontains=status
         )
 
-    return render(
-        request,
-        "dashboard/contratos.html",
-        {
-            "contratos": contratos_lista,
-            "total_contratos": len(contratos_lista),
-            "total_contratado": formatar_moeda(total_contratado),
-            "total_medido": formatar_moeda(total_medido),
-            "total_saldo": formatar_moeda(total_saldo),
-            "contrato_filtro": contrato_filtro,
-            "status_filtro": status_filtro,
-            "contratos_disponiveis": contratos_disponiveis,
-            "status_disponiveis": status_disponiveis,
-            "ultima_sincronizacao": obter_ultima_sincronizacao_contratos(),
-        },
+    total_contratos = contratos_queryset.count()
+    total_valor_contratual = somar_queryset(
+        contratos_queryset,
+        "valor_contratual",
     )
+    total_valor_total = somar_queryset(
+        contratos_queryset,
+        "valor_total",
+    )
+
+    numeros_contratos = list(
+        contratos_queryset.values_list(
+            "numero_contrato",
+            flat=True,
+        )
+    )
+
+    total_medido = Medicao.objects.filter(
+        numero_contrato__in=numeros_contratos
+    ).aggregate(
+        total=Sum("valor_medido")
+    )["total"] or Decimal("0")
+
+    context = {
+        "contratos": contratos_queryset,
+        "total_contratos": total_contratos,
+        "total_valor_contratual": total_valor_contratual,
+        "total_valor_total": total_valor_total,
+        "total_medido": total_medido,
+    }
+
+    return render(request, "dashboard/contratos.html", context)
 
 
 @login_required
 def contrato_detalhe(request, numero_contrato):
-    contrato = Contrato.objects.filter(
-        numero_contrato=numero_contrato
-    ).first()
-
-    if not contrato:
-        messages.error(
-            request,
-            "Contrato não encontrado.",
-        )
-        return redirect("contratos")
-
-    medicoes = (
-        Medicao.objects
-        .filter(numero_contrato=numero_contrato)
-        .order_by("id")
+    contrato = get_object_or_404(
+        Contrato,
+        numero_contrato=numero_contrato,
     )
 
-    total_medido = Decimal("0")
-    total_pago = Decimal("0")
-    total_faturado = Decimal("0")
-    total_processar = Decimal("0")
+    medicoes_queryset = Medicao.objects.filter(
+        numero_contrato=numero_contrato,
+    )
 
-    medido_por_mes = defaultdict(Decimal)
-    pago_por_mes = defaultdict(Decimal)
+    situacao = request.GET.get("situacao", "")
 
-    linhas_medicoes = []
-
-    for medicao in medicoes:
-        total_medido += medicao.valor_medido
-        total_pago += medicao.valor_pago
-        total_faturado += medicao.valor_faturado
-        total_processar += medicao.valor_a_processar
-
-        mes_ano = medicao.mes_ano or "Sem mês"
-
-        medido_por_mes[mes_ano] += medicao.valor_medido
-        pago_por_mes[mes_ano] += medicao.valor_pago
-
-        linhas_medicoes.append(
-            {
-                "numero_medicao": medicao.numero_medicao,
-                "mes_ano": medicao.mes_ano,
-                "valor_medido": formatar_moeda(medicao.valor_medido),
-                "valor_pago": formatar_moeda(medicao.valor_pago),
-                "valor_liquidado": formatar_moeda(medicao.valor_liquidado),
-                "valor_faturado": formatar_moeda(medicao.valor_faturado),
-                "valor_a_processar": formatar_moeda(medicao.valor_a_processar),
-                "data_pagamento": medicao.data_pagamento,
-                "data_faturamento": medicao.data_faturamento,
-                "situacao": medicao.situacao,
-            }
+    if situacao:
+        medicoes_queryset = medicoes_queryset.filter(
+            situacao__icontains=situacao
         )
 
-    saldo_estimado = contrato.valor_total - total_medido
+    total_medicoes = medicoes_queryset.count()
+    total_medido = somar_queryset(
+        medicoes_queryset,
+        "valor_medido",
+    )
+    total_pago = somar_queryset(
+        medicoes_queryset,
+        "valor_pago",
+    )
+    total_liquidado = somar_queryset(
+        medicoes_queryset,
+        "valor_liquidado",
+    )
+    total_faturado = somar_queryset(
+        medicoes_queryset,
+        "valor_faturado",
+    )
+    total_a_processar = somar_queryset(
+        medicoes_queryset,
+        "valor_a_processar",
+    )
 
-    percentual_evolucao = Decimal("0")
+    saldo_restante = (contrato.valor_total or Decimal("0")) - total_medido
 
-    if contrato.valor_total > 0:
-        percentual_evolucao = (total_medido / contrato.valor_total) * 100
+    percentual_medido = Decimal("0")
 
-    percentual_saldo = Decimal("100") - percentual_evolucao
+    if contrato.valor_total and contrato.valor_total > 0:
+        percentual_medido = (total_medido / contrato.valor_total) * 100
 
-    if percentual_saldo < 0:
-        percentual_saldo = Decimal("0")
+    dados_mes = gerar_dados_por_mes(medicoes_queryset)
 
-    grafico_meses = list(medido_por_mes.keys())
-
-    grafico_medido_mensal = [
-        float(valor) for valor in medido_por_mes.values()
-    ]
-
-    grafico_pago_mensal = [
-        float(pago_por_mes[mes]) for mes in grafico_meses
-    ]
-
-    grafico_evolucao_labels = [
-        "Executado",
-        "Saldo",
-    ]
-
-    grafico_evolucao_valores = [
-        round(float(percentual_evolucao), 2),
-        round(float(percentual_saldo), 2),
-    ]
+    context = {
+        "contrato": contrato,
+        "medicoes": medicoes_queryset,
+        "total_medicoes": total_medicoes,
+        "total_medido": total_medido,
+        "total_pago": total_pago,
+        "total_liquidado": total_liquidado,
+        "total_faturado": total_faturado,
+        "total_a_processar": total_a_processar,
+        "saldo_restante": saldo_restante,
+        "percentual_medido": percentual_medido,
+        "labels_meses": json.dumps(dados_mes["labels"], ensure_ascii=False),
+        "valores_medido_mes": json.dumps(
+            dados_mes["valores_medido"],
+            ensure_ascii=False,
+        ),
+        "valores_pago_mes": json.dumps(
+            dados_mes["valores_pago"],
+            ensure_ascii=False,
+        ),
+        "valores_resumo_contrato": json.dumps(
+            [
+                decimal_para_float(total_medido),
+                decimal_para_float(total_pago),
+                decimal_para_float(total_a_processar),
+            ],
+            ensure_ascii=False,
+        ),
+    }
 
     return render(
         request,
         "dashboard/contrato_detalhe.html",
-        {
-            "contrato": contrato,
-            "total_medido": formatar_moeda(total_medido),
-            "total_pago": formatar_moeda(total_pago),
-            "total_faturado": formatar_moeda(total_faturado),
-            "total_processar": formatar_moeda(total_processar),
-            "saldo_estimado": formatar_moeda(saldo_estimado),
-            "valor_total": formatar_moeda(contrato.valor_total),
-            "percentual_evolucao": formatar_percentual(percentual_evolucao),
-            "total_medicoes": medicoes.count(),
-            "linhas_medicoes": linhas_medicoes,
-            "ultima_sincronizacao": obter_ultima_sincronizacao_medicoes(),
-            "grafico_meses": json.dumps(
-                grafico_meses,
-                ensure_ascii=False,
-            ),
-            "grafico_medido_mensal": json.dumps(
-                grafico_medido_mensal,
-            ),
-            "grafico_pago_mensal": json.dumps(
-                grafico_pago_mensal,
-            ),
-            "grafico_evolucao_labels": json.dumps(
-                grafico_evolucao_labels,
-                ensure_ascii=False,
-            ),
-            "grafico_evolucao_valores": json.dumps(
-                grafico_evolucao_valores,
-            ),
-        },
+        context,
     )
+
+
+@login_required
+def sincronizar_contratos(request):
+    resultado = importar_contratos()
+
+    if resultado.get("sucesso"):
+        messages.success(
+            request,
+            resultado.get("mensagem", "Contratos sincronizados com sucesso."),
+        )
+    else:
+        messages.error(
+            request,
+            resultado.get("mensagem", "Erro ao sincronizar contratos."),
+        )
+
+    return redirect("contratos")
 
 
 @login_required
 def medicoes(request):
-    contrato_filtro = request.GET.get("contrato", "").strip()
-    situacao_filtro = request.GET.get("situacao", "").strip()
+    medicoes_queryset = Medicao.objects.all()
 
-    medicoes_query = Medicao.objects.all().order_by("id")
+    numero_contrato = request.GET.get("contrato", "")
+    situacao = request.GET.get("situacao", "")
 
-    contratos_disponiveis = (
-        Medicao.objects
-        .exclude(numero_contrato="")
-        .values_list("numero_contrato", flat=True)
-        .distinct()
-        .order_by("numero_contrato")
-    )
-
-    situacoes_disponiveis = (
-        Medicao.objects
-        .exclude(situacao="")
-        .values_list("situacao", flat=True)
-        .distinct()
-        .order_by("situacao")
-    )
-
-    if contrato_filtro:
-        medicoes_query = medicoes_query.filter(numero_contrato=contrato_filtro)
-
-    if situacao_filtro:
-        medicoes_query = medicoes_query.filter(situacao=situacao_filtro)
-
-    medicoes = list(medicoes_query)
-
-    total_medido = Decimal("0")
-    total_pago = Decimal("0")
-    total_faturado = Decimal("0")
-    total_processar = Decimal("0")
-
-    medido_por_mes = defaultdict(Decimal)
-
-    linhas = []
-
-    for medicao in medicoes:
-        total_medido += medicao.valor_medido
-        total_pago += medicao.valor_pago
-        total_faturado += medicao.valor_faturado
-        total_processar += medicao.valor_a_processar
-
-        if medicao.mes_ano:
-            medido_por_mes[medicao.mes_ano] += medicao.valor_medido
-
-        linhas.append(
-            [
-                medicao.numero_medicao,
-                medicao.numero_contrato,
-                medicao.mes_ano,
-                formatar_moeda(medicao.valor_medido),
-                formatar_moeda(medicao.valor_pago),
-                medicao.data_pagamento,
-                formatar_moeda(medicao.valor_liquidado),
-                formatar_moeda(medicao.valor_faturado),
-                medicao.data_faturamento,
-                formatar_moeda(medicao.valor_a_processar),
-                medicao.situacao,
-            ]
+    if numero_contrato:
+        medicoes_queryset = medicoes_queryset.filter(
+            numero_contrato__icontains=numero_contrato
         )
 
-    cabecalho = [
-        "Nº Medição",
-        "Nº Contrato",
-        "Mês/Ano",
-        "Valor Medido (R$)",
-        "Valor Pago (R$)",
-        "Data Pagamento",
-        "Valor Liquidado (R$)",
-        "Valor Faturado (R$)",
-        "Data Faturamento",
-        "Medições a Processar (R$)",
-        "Situação",
-    ]
+    if situacao:
+        medicoes_queryset = medicoes_queryset.filter(
+            situacao__icontains=situacao
+        )
 
-    grafico_labels = list(medido_por_mes.keys())
-    grafico_valores = [float(valor) for valor in medido_por_mes.values()]
-
-    return render(
-        request,
-        "dashboard/medicoes.html",
-        {
-            "total_linhas": len(linhas),
-            "cabecalho": cabecalho,
-            "linhas": linhas,
-            "contrato_filtro": contrato_filtro,
-            "situacao_filtro": situacao_filtro,
-            "contratos_disponiveis": contratos_disponiveis,
-            "situacoes_disponiveis": situacoes_disponiveis,
-            "ultima_sincronizacao": obter_ultima_sincronizacao_medicoes(),
-            "total_medido": formatar_moeda(total_medido),
-            "total_pago": formatar_moeda(total_pago),
-            "total_faturado": formatar_moeda(total_faturado),
-            "total_processar": formatar_moeda(total_processar),
-            "grafico_labels": json.dumps(grafico_labels, ensure_ascii=False),
-            "grafico_valores": json.dumps(grafico_valores),
-        },
+    total_medicoes = medicoes_queryset.count()
+    total_valor_medido = somar_queryset(
+        medicoes_queryset,
+        "valor_medido",
+    )
+    total_valor_pago = somar_queryset(
+        medicoes_queryset,
+        "valor_pago",
+    )
+    total_valor_liquidado = somar_queryset(
+        medicoes_queryset,
+        "valor_liquidado",
+    )
+    total_valor_faturado = somar_queryset(
+        medicoes_queryset,
+        "valor_faturado",
+    )
+    total_valor_a_processar = somar_queryset(
+        medicoes_queryset,
+        "valor_a_processar",
     )
 
+    dados_mes = gerar_dados_por_mes(medicoes_queryset)
+
+    context = {
+        "medicoes": medicoes_queryset,
+        "total_medicoes": total_medicoes,
+        "total_valor_medido": total_valor_medido,
+        "total_valor_pago": total_valor_pago,
+        "total_valor_liquidado": total_valor_liquidado,
+        "total_valor_faturado": total_valor_faturado,
+        "total_valor_a_processar": total_valor_a_processar,
+        "labels_meses": json.dumps(dados_mes["labels"], ensure_ascii=False),
+        "valores_medido_mes": json.dumps(
+            dados_mes["valores_medido"],
+            ensure_ascii=False,
+        ),
+        "valores_pago_mes": json.dumps(
+            dados_mes["valores_pago"],
+            ensure_ascii=False,
+        ),
+    }
+
+    return render(request, "dashboard/medicoes.html", context)
+
+
 @login_required
+def sincronizar_medicoes(request):
+    resultado = importar_medicoes()
+
+    if resultado.get("sucesso"):
+        messages.success(
+            request,
+            resultado.get("mensagem", "Medições sincronizadas com sucesso."),
+        )
+    else:
+        messages.error(
+            request,
+            resultado.get("mensagem", "Erro ao sincronizar medições."),
+        )
+
+    return redirect("medicoes")
+
+
+@permissao_grupo_required(
+    [GRUPO_ADMINISTRADOR, GRUPO_DIRETORIA, GRUPO_FINANCEIRO],
+    mensagem="Você não tem permissão para exportar relatórios.",
+)
 def exportar_contratos_excel_view(request):
     contratos_queryset = Contrato.objects.all()
 
@@ -776,7 +614,10 @@ def exportar_contratos_excel_view(request):
     return response
 
 
-@login_required
+@permissao_grupo_required(
+    [GRUPO_ADMINISTRADOR, GRUPO_DIRETORIA, GRUPO_FINANCEIRO],
+    mensagem="Você não tem permissão para exportar relatórios.",
+)
 def exportar_medicoes_excel_view(request):
     medicoes_queryset = Medicao.objects.all()
 
