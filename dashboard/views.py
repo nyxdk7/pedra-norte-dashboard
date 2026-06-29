@@ -20,6 +20,7 @@ from dashboard.services.exports.excel_exporter import (
     exportar_contratos_excel,
     exportar_medicoes_excel,
 )
+from dashboard.services.exports.pdf_exporter import exportar_contrato_pdf
 from dashboard.services.google_sheets import read_sheet_range
 from dashboard.services.importador_contratos import importar_contratos
 from dashboard.services.importador_geral import sincronizar_tudo
@@ -103,6 +104,25 @@ def gerar_dados_por_mes(medicoes_queryset):
 def home(request):
     contratos_queryset = Contrato.objects.all()
     medicoes_queryset = Medicao.objects.all()
+
+    opcoes_contratos = Contrato.objects.values_list(
+        "numero_contrato",
+        flat=True,
+    ).distinct().order_by("numero_contrato")
+
+    opcoes_status = Contrato.objects.exclude(
+        status="",
+    ).values_list(
+        "status",
+        flat=True,
+    ).distinct().order_by("status")
+
+    opcoes_situacoes = Medicao.objects.exclude(
+        situacao="",
+    ).values_list(
+        "situacao",
+        flat=True,
+    ).distinct().order_by("situacao")
 
     contrato_filtro = request.GET.get("contrato", "")
     status_filtro = request.GET.get("status", "")
@@ -212,6 +232,9 @@ def home(request):
     context = {
         "contratos": contratos_queryset,
         "medicoes": medicoes_queryset,
+        "opcoes_contratos": opcoes_contratos,
+        "opcoes_status": opcoes_status,
+        "opcoes_situacoes": opcoes_situacoes,
         "total_contratos": total_contratos,
         "total_medicoes": total_medicoes,
         "total_valor_contratual": total_valor_contratual,
@@ -480,7 +503,80 @@ def contrato_detalhe(request, numero_contrato):
     )
 
 
-@login_required
+@permissao_grupo_required(
+    [GRUPO_ADMINISTRADOR, GRUPO_DIRETORIA, GRUPO_FINANCEIRO],
+    mensagem="Você não tem permissão para exportar relatórios.",
+)
+def exportar_contrato_pdf_view(request, numero_contrato):
+    contrato = get_object_or_404(
+        Contrato,
+        numero_contrato=numero_contrato,
+    )
+
+    medicoes_queryset = Medicao.objects.filter(
+        numero_contrato=numero_contrato,
+    )
+
+    total_medicoes = medicoes_queryset.count()
+
+    total_medido = somar_queryset(
+        medicoes_queryset,
+        "valor_medido",
+    )
+    total_pago = somar_queryset(
+        medicoes_queryset,
+        "valor_pago",
+    )
+    total_liquidado = somar_queryset(
+        medicoes_queryset,
+        "valor_liquidado",
+    )
+    total_faturado = somar_queryset(
+        medicoes_queryset,
+        "valor_faturado",
+    )
+    total_a_processar = somar_queryset(
+        medicoes_queryset,
+        "valor_a_processar",
+    )
+
+    saldo_restante = (contrato.valor_total or Decimal("0")) - total_medido
+
+    percentual_medido = Decimal("0")
+
+    if contrato.valor_total and contrato.valor_total > 0:
+        percentual_medido = (total_medido / contrato.valor_total) * 100
+
+    arquivo = exportar_contrato_pdf(
+        contrato=contrato,
+        medicoes=medicoes_queryset,
+        total_medicoes=total_medicoes,
+        total_medido=total_medido,
+        total_pago=total_pago,
+        total_liquidado=total_liquidado,
+        total_faturado=total_faturado,
+        total_a_processar=total_a_processar,
+        saldo_restante=saldo_restante,
+        percentual_medido=percentual_medido,
+    )
+
+    numero_arquivo = contrato.numero_contrato.replace("/", "-").replace("\\", "-")
+
+    response = HttpResponse(
+        arquivo.getvalue(),
+        content_type="application/pdf",
+    )
+    response["Content-Disposition"] = (
+        f'attachment; filename="contrato_{numero_arquivo}_pedra_norte.pdf"'
+    )
+
+    return response
+
+
+@permissao_grupo_required(
+    [GRUPO_ADMINISTRADOR],
+    mensagem="Apenas administradores podem sincronizar contratos.",
+)
 def sincronizar_contratos(request):
     resultado = importar_contratos()
 
@@ -561,7 +657,10 @@ def medicoes(request):
     return render(request, "dashboard/medicoes.html", context)
 
 
-@login_required
+@permissao_grupo_required(
+    [GRUPO_ADMINISTRADOR],
+    mensagem="Apenas administradores podem sincronizar medições.",
+)
 def sincronizar_medicoes(request):
     resultado = importar_medicoes()
 

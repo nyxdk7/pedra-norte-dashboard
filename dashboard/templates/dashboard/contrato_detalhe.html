@@ -1,82 +1,375 @@
 {% extends "dashboard/base.html" %}
+{% load formatadores %}
 
 {% block title %}Contrato {{ contrato.numero_contrato }} - Pedra Norte{% endblock %}
 
 {% block extra_head %}
     <style>
-        .detail-card {
+        .detail-header-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .metric-card {
             border: 1px solid #ddd;
             background: #fff;
             padding: 18px;
             margin-bottom: 20px;
-            min-height: 112px;
+            min-height: 130px;
         }
 
-        .detail-card .label {
+        .metric-label {
             color: #666;
             font-size: 13px;
-            margin-bottom: 7px;
+            margin-bottom: 8px;
         }
 
-        .detail-card h4 {
-            font-size: 22px;
-            font-weight: 600;
-            margin: 0;
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.2;
         }
 
-        .detail-card .hint {
+        .metric-help {
             color: #777;
-            font-size: 12px;
+            font-size: 13px;
             margin-top: 8px;
         }
 
-        .info-box {
-            background: #fff;
+        .contract-info-card {
             border: 1px solid #ddd;
-            padding: 18px;
+            background: #fff;
+            padding: 20px;
             margin-bottom: 24px;
         }
 
-        .info-line {
-            margin-bottom: 10px;
+        .contract-info-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #111827;
+        }
+
+        .contract-info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .info-item {
+            border-top: 1px solid #eee;
+            padding-top: 10px;
         }
 
         .info-label {
+            font-size: 12px;
             color: #666;
-            font-size: 13px;
-            margin-bottom: 2px;
-        }
-
-        .info-value {
-            font-weight: 600;
-        }
-
-        .object-text {
-            white-space: normal;
-            line-height: 1.5;
-        }
-
-        .chart-box {
-            background: #fff;
-            border: 1px solid #ddd;
-            padding: 18px;
-            margin-bottom: 24px;
-        }
-
-        .chart-box.large {
-            min-height: 390px;
-        }
-
-        .chart-title {
-            font-size: 16px;
-            font-weight: 600;
             margin-bottom: 4px;
         }
 
-        .chart-subtitle {
+        .info-value {
+            font-size: 14px;
+            color: #111827;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .contract-object {
+            border-top: 1px solid #eee;
+            margin-top: 16px;
+            padding-top: 14px;
+        }
+
+        .progress-panel {
+            border-top: 1px solid #eee;
+            margin-top: 18px;
+            padding-top: 18px;
+            display: grid;
+            grid-template-columns: 240px minmax(0, 1fr);
+            gap: 24px;
+            align-items: center;
+        }
+
+        .progress-chart-wrap {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto;
+        }
+
+        .progress-chart-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            pointer-events: none;
+        }
+
+        .progress-chart-percent {
+            font-size: 32px;
+            font-weight: 800;
+            color: #111827;
+            line-height: 1;
+        }
+
+        .progress-chart-label {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .progress-content-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 6px;
+        }
+
+        .progress-content-text {
             color: #666;
             font-size: 13px;
             margin-bottom: 16px;
+        }
+
+        .progress-line {
+            width: 100%;
+            height: 26px;
+            background: #e5e7eb;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2f343a;
+            width: 0%;
+            transition: width 0.7s ease;
+        }
+
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .progress-meta strong {
+            color: #111827;
+        }
+
+        .progress-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .progress-stat {
+            border: 1px solid #e5e7eb;
+            background: #f8fafc;
+            padding: 12px;
+        }
+
+        .progress-stat-label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .progress-stat-value {
+            color: #111827;
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .chart-container {
+            border: 1px solid #ddd;
+            background: #fff;
+            padding: 22px;
+            margin-bottom: 24px;
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .chart-description {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .chart-badge {
+            border: 1px solid #d7dce1;
+            background: #f8fafc;
+            color: #4b5563;
+            font-size: 12px;
+            padding: 6px 10px;
+            white-space: nowrap;
+        }
+
+        .chart-area {
+            position: relative;
+            height: 390px;
+            width: 100%;
+        }
+
+        .chart-area-small {
+            position: relative;
+            height: 330px;
+            width: 100%;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .table-mobile-card {
+            display: none;
+        }
+
+        @media (max-width: 1199px) {
+            .contract-info-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .progress-panel {
+                grid-template-columns: 220px minmax(0, 1fr);
+                gap: 18px;
+            }
+
+            .progress-chart-wrap {
+                width: 200px;
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 991px) {
+            .metric-value {
+                font-size: 21px;
+            }
+
+            .contract-info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .progress-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .progress-chart-wrap {
+                width: 210px;
+                height: 210px;
+            }
+
+            .progress-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                padding: 16px;
+            }
+
+            .chart-header {
+                display: block;
+            }
+
+            .chart-badge {
+                display: inline-block;
+                margin-top: 8px;
+            }
+
+            .chart-area,
+            .chart-area-small {
+                height: 310px;
+            }
+        }
+
+        @media (max-width: 575px) {
+            .metric-card {
+                min-height: auto;
+            }
+
+            .metric-value {
+                font-size: 20px;
+            }
+
+            .progress-chart-wrap {
+                width: 190px;
+                height: 190px;
+            }
+
+            .progress-chart-percent {
+                font-size: 28px;
+            }
+
+            .progress-line {
+                height: 22px;
+            }
+
+            .chart-area,
+            .chart-area-small {
+                height: 285px;
+            }
+
+            .desktop-table-wrapper {
+                display: none;
+            }
+
+            .table-mobile-card {
+                display: block;
+            }
+
+            .mobile-medicao-card {
+                border: 1px solid #ddd;
+                background: #fff;
+                padding: 14px;
+                margin-bottom: 12px;
+            }
+
+            .mobile-medicao-title {
+                font-weight: 700;
+                color: #111827;
+                margin-bottom: 10px;
+            }
+
+            .mobile-medicao-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                border-top: 1px solid #eee;
+                padding-top: 8px;
+                margin-top: 8px;
+                font-size: 13px;
+            }
+
+            .mobile-medicao-label {
+                color: #666;
+            }
+
+            .mobile-medicao-value {
+                color: #111827;
+                font-weight: 600;
+                text-align: right;
+            }
         }
     </style>
 {% endblock %}
@@ -86,24 +379,54 @@
         <div class="container-fluid d-flex justify-content-between align-items-center">
             <div>
                 <h1 class="h3 mb-1">Contrato {{ contrato.numero_contrato }}</h1>
-                <p class="mb-0">Detalhamento financeiro e evolução do contrato</p>
-
-                <div class="sync-info">
-                    {% if ultima_sincronizacao %}
-                        Última sincronização:
-                        {{ ultima_sincronizacao|date:"d/m/Y" }}
-                        às
-                        {{ ultima_sincronizacao|date:"H:i" }}
-                    {% else %}
-                        Nenhuma sincronização realizada ainda.
-                    {% endif %}
-                </div>
+                <p class="mb-0">
+                    Visão detalhada do contrato, medições, pagamentos e evolução financeira
+                </p>
             </div>
 
-            <div>
-                <a href="{% url 'contratos' %}" class="btn btn-light">
-                    Voltar para contratos
+            <div class="detail-header-actions">
+                <a href="{% url 'contratos' %}" class="btn btn-outline-secondary">
+                    Voltar
                 </a>
+
+                {% if pode_exportar %}
+                    <div class="dropdown">
+                        <button
+                            class="btn btn-outline-success dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            Exportar
+                        </button>
+
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="{% url 'exportar_contrato_pdf' contrato.numero_contrato %}"
+                                >
+                                    PDF - Relatório do contrato
+                                </a>
+                            </li>
+
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="{% url 'exportar_medicoes_excel' %}?contrato={{ contrato.numero_contrato }}"
+                                >
+                                    XLSX - Medições do contrato
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                {% endif %}
+
+                {% if pode_sincronizar %}
+                    <a href="{% url 'sincronizar_geral' %}" class="btn btn-dark">
+                        Sincronizar agora
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -111,138 +434,297 @@
 
 {% block content %}
 
-    <div class="row">
-        <div class="col-md-3">
-            <div class="detail-card">
-                <div class="label">Valor total</div>
-                <h4>{{ valor_total }}</h4>
-                <div class="hint">Valor total do contrato</div>
+    <div class="contract-info-card">
+        <div class="contract-info-title">Dados do contrato</div>
+
+        <div class="contract-info-grid">
+            <div class="info-item">
+                <div class="info-label">Nº Contrato</div>
+                <div class="info-value">{{ contrato.numero_contrato }}</div>
             </div>
-        </div>
 
-        <div class="col-md-3">
-            <div class="detail-card">
-                <div class="label">Total medido</div>
-                <h4>{{ total_medido }}</h4>
-                <div class="hint">Valor executado em medições</div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="detail-card">
-                <div class="label">Saldo estimado</div>
-                <h4>{{ saldo_estimado }}</h4>
-                <div class="hint">Valor total menos medido</div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="detail-card">
-                <div class="label">% evolução</div>
-                <h4>{{ percentual_evolucao }}</h4>
-                <div class="hint">Medido sobre valor total</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-3">
-            <div class="detail-card">
-                <div class="label">Total pago</div>
-                <h4>{{ total_pago }}</h4>
-                <div class="hint">Pagamentos registrados</div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="detail-card">
-                <div class="label">Total faturado</div>
-                <h4>{{ total_faturado }}</h4>
-                <div class="hint">Valores faturados</div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="detail-card">
-                <div class="label">A processar</div>
-                <h4>{{ total_processar }}</h4>
-                <div class="hint">Medições pendentes</div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="detail-card">
-                <div class="label">Medições</div>
-                <h4>{{ total_medicoes }}</h4>
-                <div class="hint">Quantidade de medições</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="info-box">
-        <div class="section-title">Informações do contrato</div>
-
-        <div class="row">
-            <div class="col-md-3">
-                <div class="info-line">
-                    <div class="info-label">Empresa</div>
-                    <div class="info-value">{{ contrato.empresa }}</div>
+            <div class="info-item">
+                <div class="info-label">Empresa</div>
+                <div class="info-value">
+                    {% if contrato.empresa %}
+                        {{ contrato.empresa }}
+                    {% else %}
+                        Não informado
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="col-md-3">
-                <div class="info-line">
-                    <div class="info-label">Status</div>
-                    <div class="info-value">{{ contrato.status }}</div>
+            <div class="info-item">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    {% if contrato.status %}
+                        <span class="badge bg-secondary">{{ contrato.status }}</span>
+                    {% else %}
+                        Não informado
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="col-md-3">
-                <div class="info-line">
-                    <div class="info-label">Data início</div>
-                    <div class="info-value">{{ contrato.data_inicio }}</div>
+            <div class="info-item">
+                <div class="info-label">% Executado na planilha</div>
+                <div class="info-value">{{ contrato.percentual_executado|percentual_br }}</div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Data Início</div>
+                <div class="info-value">
+                    {% if contrato.data_inicio %}
+                        {{ contrato.data_inicio }}
+                    {% else %}
+                        Não informado
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="col-md-3">
-                <div class="info-line">
-                    <div class="info-label">Data fim</div>
-                    <div class="info-value">{{ contrato.data_fim }}</div>
+            <div class="info-item">
+                <div class="info-label">Data Fim</div>
+                <div class="info-value">
+                    {% if contrato.data_fim %}
+                        {{ contrato.data_fim }}
+                    {% else %}
+                        Não informado
+                    {% endif %}
                 </div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Garantia</div>
+                <div class="info-value">
+                    {% if contrato.garantia %}
+                        {{ contrato.garantia }}
+                    {% else %}
+                        Não informado
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Total de medições</div>
+                <div class="info-value">{{ total_medicoes }}</div>
             </div>
         </div>
 
-        <div class="info-line mt-3">
+        <div class="contract-object">
             <div class="info-label">Objeto</div>
-            <div class="object-text">{{ contrato.objeto }}</div>
+            <div class="info-value">
+                {% if contrato.objeto %}
+                    {{ contrato.objeto }}
+                {% else %}
+                    Não informado
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="progress-panel">
+            <div class="progress-chart-wrap">
+                <canvas id="graficoProgressoContrato"></canvas>
+
+                <div class="progress-chart-center">
+                    <div class="progress-chart-percent">
+                        {{ percentual_medido|percentual_br }}
+                    </div>
+                    <div class="progress-chart-label">
+                        medido sobre o contrato
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-content">
+                <div class="progress-content-title">Progresso financeiro da obra</div>
+                <div class="progress-content-text">
+                    Percentual calculado pelo valor medido em relação ao valor total do contrato.
+                    Passe o mouse ou toque no gráfico para ver os detalhes.
+                </div>
+
+                <div class="progress-line">
+                    <div
+                        class="progress-fill"
+                        style="width: {% if percentual_medido > 100 %}100{% else %}{{ percentual_medido|numero_js }}{% endif %}%;">
+                    </div>
+                </div>
+
+                <div class="progress-meta">
+                    <span>Medido sobre o valor total</span>
+                    <strong>{{ percentual_medido|percentual_br }}</strong>
+                </div>
+
+                <div class="progress-stats-grid">
+                    <div class="progress-stat">
+                        <div class="progress-stat-label">Valor total</div>
+                        <div class="progress-stat-value">{{ contrato.valor_total|brl }}</div>
+                    </div>
+
+                    <div class="progress-stat">
+                        <div class="progress-stat-label">Total medido</div>
+                        <div class="progress-stat-value">{{ total_medido|brl }}</div>
+                    </div>
+
+                    <div class="progress-stat">
+                        <div class="progress-stat-label">Saldo restante</div>
+                        <div class="progress-stat-value">{{ saldo_restante|brl }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-lg-8">
-            <div class="chart-box large">
-                <div class="chart-title">Medições e pagamentos por mês</div>
-                <div class="chart-subtitle">
-                    Comparativo mensal entre valor medido e valor pago
-                </div>
-
-                <canvas id="graficoMensal" height="125"></canvas>
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card">
+                <div class="metric-label">Valor contratual</div>
+                <div class="metric-value">{{ contrato.valor_contratual|brl }}</div>
+                <div class="metric-help">Valor original do contrato</div>
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="chart-box large">
-                <div class="chart-title">Evolução do contrato</div>
-                <div class="chart-subtitle">
-                    Percentual executado versus saldo
-                </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card">
+                <div class="metric-label">Valor total</div>
+                <div class="metric-value">{{ contrato.valor_total|brl }}</div>
+                <div class="metric-help">Contrato com aditivos/reajustes</div>
+            </div>
+        </div>
 
-                <canvas id="graficoEvolucao" height="250"></canvas>
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card">
+                <div class="metric-label">Total medido</div>
+                <div class="metric-value">{{ total_medido|brl }}</div>
+                <div class="metric-help">Valor executado em medições</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card">
+                <div class="metric-label">Saldo restante</div>
+                <div class="metric-value">{{ saldo_restante|brl }}</div>
+                <div class="metric-help">Valor total menos valor medido</div>
             </div>
         </div>
     </div>
 
-    <div class="table-container">
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card">
+                <div class="metric-label">Total pago</div>
+                <div class="metric-value">{{ total_pago|brl }}</div>
+                <div class="metric-help">Pagamentos registrados</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card">
+                <div class="metric-label">Total liquidado</div>
+                <div class="metric-value">{{ total_liquidado|brl }}</div>
+                <div class="metric-help">Valores liquidados</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card">
+                <div class="metric-label">Total faturado</div>
+                <div class="metric-value">{{ total_faturado|brl }}</div>
+                <div class="metric-help">Valores faturados</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card">
+                <div class="metric-label">A processar</div>
+                <div class="metric-value">{{ total_a_processar|brl }}</div>
+                <div class="metric-help">Medições pendentes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Evolução mensal do contrato</div>
+                        <div class="chart-description">
+                            Valor medido e valor pago mês a mês para o contrato {{ contrato.numero_contrato }}
+                        </div>
+                    </div>
+
+                    <div class="chart-badge">
+                        Histórico mensal
+                    </div>
+                </div>
+
+                <div class="chart-area">
+                    <canvas id="graficoContratoMensal"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Resumo do contrato</div>
+                        <div class="chart-description">
+                            Medido, pago e valores a processar
+                        </div>
+                    </div>
+
+                    <div class="chart-badge">
+                        Consolidado
+                    </div>
+                </div>
+
+                <div class="chart-area-small">
+                    <canvas id="graficoResumoContrato"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-info">
+        <div class="section-title">Filtros das medições</div>
+
+        <form method="get">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Situação</label>
+                    <select name="situacao" class="form-select">
+                        <option value="">Todas as situações</option>
+
+                        {% for situacao_opcao in opcoes_situacoes %}
+                            <option
+                                value="{{ situacao_opcao }}"
+                                {% if request.GET.situacao == situacao_opcao %}selected{% endif %}
+                            >
+                                {{ situacao_opcao }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="filter-actions">
+                        <button type="submit" class="btn btn-dark">
+                            Filtrar
+                        </button>
+
+                        <a
+                            href="{% url 'contrato_detalhe' contrato.numero_contrato %}"
+                            class="btn btn-outline-secondary"
+                        >
+                            Limpar filtros
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-container desktop-table-wrapper">
         <div class="section-title">Medições do contrato</div>
 
         <table class="table table-bordered table-hover align-middle">
@@ -252,28 +734,37 @@
                     <th>Mês/Ano</th>
                     <th>Valor Medido</th>
                     <th>Valor Pago</th>
+                    <th>Data Pagamento</th>
                     <th>Valor Liquidado</th>
                     <th>Valor Faturado</th>
-                    <th>A Processar</th>
-                    <th>Data Pagamento</th>
                     <th>Data Faturamento</th>
+                    <th>A Processar</th>
                     <th>Situação</th>
                 </tr>
             </thead>
 
             <tbody>
-                {% for medicao in linhas_medicoes %}
+                {% for medicao in medicoes %}
                     <tr>
                         <td>{{ medicao.numero_medicao }}</td>
                         <td>{{ medicao.mes_ano }}</td>
-                        <td>{{ medicao.valor_medido }}</td>
-                        <td>{{ medicao.valor_pago }}</td>
-                        <td>{{ medicao.valor_liquidado }}</td>
-                        <td>{{ medicao.valor_faturado }}</td>
-                        <td>{{ medicao.valor_a_processar }}</td>
+                        <td>{{ medicao.valor_medido|brl }}</td>
+                        <td>{{ medicao.valor_pago|brl }}</td>
                         <td>{{ medicao.data_pagamento }}</td>
+                        <td>{{ medicao.valor_liquidado|brl }}</td>
+                        <td>{{ medicao.valor_faturado|brl }}</td>
                         <td>{{ medicao.data_faturamento }}</td>
-                        <td>{{ medicao.situacao }}</td>
+                        <td>{{ medicao.valor_a_processar|brl }}</td>
+
+                        <td>
+                            {% if medicao.situacao == "Pago" %}
+                                <span class="badge bg-success">{{ medicao.situacao }}</span>
+                            {% elif medicao.situacao %}
+                                <span class="badge bg-secondary">{{ medicao.situacao }}</span>
+                            {% else %}
+                                <span class="text-muted">Não informado</span>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% empty %}
                     <tr>
@@ -286,127 +777,351 @@
         </table>
     </div>
 
+    <div class="table-mobile-card">
+        <div class="section-title">Medições do contrato</div>
+
+        {% for medicao in medicoes %}
+            <div class="mobile-medicao-card">
+                <div class="mobile-medicao-title">
+                    {{ medicao.numero_medicao }} — {{ medicao.mes_ano }}
+                </div>
+
+                <div class="mobile-medicao-row">
+                    <span class="mobile-medicao-label">Valor medido</span>
+                    <span class="mobile-medicao-value">{{ medicao.valor_medido|brl }}</span>
+                </div>
+
+                <div class="mobile-medicao-row">
+                    <span class="mobile-medicao-label">Valor pago</span>
+                    <span class="mobile-medicao-value">{{ medicao.valor_pago|brl }}</span>
+                </div>
+
+                <div class="mobile-medicao-row">
+                    <span class="mobile-medicao-label">Liquidado</span>
+                    <span class="mobile-medicao-value">{{ medicao.valor_liquidado|brl }}</span>
+                </div>
+
+                <div class="mobile-medicao-row">
+                    <span class="mobile-medicao-label">Faturado</span>
+                    <span class="mobile-medicao-value">{{ medicao.valor_faturado|brl }}</span>
+                </div>
+
+                <div class="mobile-medicao-row">
+                    <span class="mobile-medicao-label">A processar</span>
+                    <span class="mobile-medicao-value">{{ medicao.valor_a_processar|brl }}</span>
+                </div>
+
+                <div class="mobile-medicao-row">
+                    <span class="mobile-medicao-label">Situação</span>
+                    <span class="mobile-medicao-value">
+                        {% if medicao.situacao %}
+                            {{ medicao.situacao }}
+                        {% else %}
+                            Não informado
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        {% empty %}
+            <div class="card-info text-center text-muted">
+                Nenhuma medição encontrada para este contrato.
+            </div>
+        {% endfor %}
+    </div>
+
 {% endblock %}
 
 {% block scripts %}
     <script>
-        function formatarMoeda(valor) {
-            valor = valor || 0;
+        const percentualMedidoContrato = {{ percentual_medido|numero_js }};
+        const percentualMedidoGrafico = Math.min(Math.max(percentualMedidoContrato, 0), 100);
+        const percentualSaldoGrafico = Math.max(100 - percentualMedidoGrafico, 0);
 
-            return "R$ " + valor.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+        const labelsMesesContrato = {{ labels_meses|safe }};
+        const valoresMedidoContrato = {{ valores_medido_mes|safe }};
+        const valoresPagoContrato = {{ valores_pago_mes|safe }};
+        const valoresResumoContrato = {{ valores_resumo_contrato|safe }};
+
+        const isMobile = window.innerWidth <= 768;
+
+        const cores = {
+            grafite: "#5f6873",
+            grafiteEscuro: "#2f343a",
+            verde: "#059669",
+            vermelho: "#dc2626",
+            cinza: "#64748b",
+            cinzaClaro: "#e5e7eb",
+            grade: "rgba(148, 163, 184, 0.22)",
+            texto: "#475569"
+        };
+
+        function moedaCompleta(valor) {
+            return new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL"
+            }).format(valor || 0);
         }
 
-        const corAzul = "#2f5f8f";
-        const corVerde = "#3f7f58";
-        const corSaldo = "#d9dee3";
+        function moedaCompacta(valor) {
+            const numero = Math.abs(valor || 0);
 
-        const meses = {{ grafico_meses|safe }};
-        const medidoMensal = {{ grafico_medido_mensal|safe }};
-        const pagoMensal = {{ grafico_pago_mensal|safe }};
+            if (numero >= 1000000000) {
+                return "R$ " + (valor / 1000000000).toLocaleString("pt-BR", {
+                    maximumFractionDigits: 1
+                }) + " bi";
+            }
 
-        new Chart(document.getElementById("graficoMensal"), {
-            type: "bar",
+            if (numero >= 1000000) {
+                return "R$ " + (valor / 1000000).toLocaleString("pt-BR", {
+                    maximumFractionDigits: 0
+                }) + " mi";
+            }
+
+            if (numero >= 1000) {
+                return "R$ " + (valor / 1000).toLocaleString("pt-BR", {
+                    maximumFractionDigits: 0
+                }) + " mil";
+            }
+
+            return moedaCompleta(valor);
+        }
+
+        function percentualFormatado(valor) {
+            return (valor || 0).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }) + "%";
+        }
+
+        function criarGrafico(id, config) {
+            const elemento = document.getElementById(id);
+
+            if (!elemento) {
+                return;
+            }
+
+            new Chart(elemento, config);
+        }
+
+        const opcoesBase = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 650
+            },
+            plugins: {
+                legend: {
+                    position: "top",
+                    align: "center",
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 10,
+                        boxHeight: 10,
+                        padding: 16,
+                        color: cores.texto,
+                        font: {
+                            size: isMobile ? 11 : 13,
+                            weight: "600"
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "rgba(17, 24, 39, 0.94)",
+                    titleColor: "#ffffff",
+                    bodyColor: "#ffffff",
+                    borderWidth: 0,
+                    padding: 10,
+                    displayColors: true
+                }
+            }
+        };
+
+        const opcoesEscalaMoeda = {
+            ticks: {
+                color: cores.texto,
+                maxTicksLimit: isMobile ? 5 : 7,
+                font: {
+                    size: isMobile ? 11 : 13
+                },
+                callback: function(value) {
+                    return moedaCompacta(value);
+                }
+            },
+            grid: {
+                color: cores.grade
+            }
+        };
+
+        criarGrafico("graficoProgressoContrato", {
+            type: "doughnut",
             data: {
-                labels: meses,
+                labels: [
+                    "Medido",
+                    "Saldo"
+                ],
                 datasets: [
                     {
-                        label: "Valor medido",
-                        data: medidoMensal,
-                        backgroundColor: corAzul,
-                        borderWidth: 1
-                    },
-                    {
-                        label: "Valor pago",
-                        data: pagoMensal,
-                        backgroundColor: corVerde,
-                        borderWidth: 1
+                        data: [
+                            percentualMedidoGrafico,
+                            percentualSaldoGrafico
+                        ],
+                        backgroundColor: [
+                            cores.grafiteEscuro,
+                            cores.cinzaClaro
+                        ],
+                        borderWidth: 0,
+                        hoverBorderWidth: 0
                     }
                 ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
+                cutout: "72%",
                 plugins: {
                     legend: {
-                        labels: {
-                            boxWidth: 14,
-                            font: {
-                                size: 12
-                            }
-                        }
+                        display: false
                     },
                     tooltip: {
+                        backgroundColor: "rgba(17, 24, 39, 0.94)",
+                        titleColor: "#ffffff",
+                        bodyColor: "#ffffff",
+                        borderWidth: 0,
+                        padding: 10,
+                        displayColors: true,
                         callbacks: {
                             label: function(context) {
-                                return context.dataset.label + ": " + formatarMoeda(context.raw);
+                                return context.label + ": " + percentualFormatado(context.raw);
                             }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return "R$ " + Number(value).toLocaleString("pt-BR");
-                            }
-                        },
-                        grid: {
-                            color: "#e7e7e7"
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
                         }
                     }
                 }
             }
         });
 
-        const evolucaoLabels = {{ grafico_evolucao_labels|safe }};
-        const evolucaoValores = {{ grafico_evolucao_valores|safe }};
-
-        new Chart(document.getElementById("graficoEvolucao"), {
-            type: "doughnut",
+        criarGrafico("graficoContratoMensal", {
+            type: "bar",
             data: {
-                labels: evolucaoLabels,
-                datasets: [{
-                    label: "Evolução",
-                    data: evolucaoValores,
-                    backgroundColor: [
-                        corVerde,
-                        corSaldo
-                    ],
-                    borderColor: "#ffffff",
-                    borderWidth: 2
-                }]
+                labels: labelsMesesContrato,
+                datasets: [
+                    {
+                        label: "Valor medido",
+                        data: valoresMedidoContrato,
+                        backgroundColor: cores.grafite,
+                        borderWidth: 0,
+                        hoverBorderWidth: 0,
+                        borderRadius: 0,
+                        barPercentage: isMobile ? 0.80 : 0.86,
+                        categoryPercentage: isMobile ? 0.82 : 0.88,
+                        maxBarThickness: isMobile ? 18 : 32
+                    },
+                    {
+                        label: "Valor pago",
+                        data: valoresPagoContrato,
+                        backgroundColor: cores.verde,
+                        borderWidth: 0,
+                        hoverBorderWidth: 0,
+                        borderRadius: 0,
+                        barPercentage: isMobile ? 0.80 : 0.86,
+                        categoryPercentage: isMobile ? 0.82 : 0.88,
+                        maxBarThickness: isMobile ? 18 : 32
+                    }
+                ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                cutout: "62%",
-                plugins: {
-                    legend: {
-                        position: "bottom",
-                        labels: {
-                            boxWidth: 14,
+                ...opcoesBase,
+                scales: {
+                    x: {
+                        ticks: {
+                            color: cores.texto,
                             font: {
-                                size: 12
-                            }
+                                size: isMobile ? 10 : 12
+                            },
+                            autoSkip: true,
+                            maxTicksLimit: isMobile ? 6 : 14,
+                            maxRotation: isMobile ? 0 : 40,
+                            minRotation: 0
+                        },
+                        grid: {
+                            color: cores.grade
                         }
                     },
+                    y: {
+                        beginAtZero: true,
+                        ...opcoesEscalaMoeda
+                    }
+                },
+                plugins: {
+                    ...opcoesBase.plugins,
                     tooltip: {
+                        ...opcoesBase.plugins.tooltip,
                         callbacks: {
                             label: function(context) {
-                                return context.label + ": " + context.raw.toLocaleString("pt-BR", {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2
-                                }) + "%";
+                                return context.dataset.label + ": " + moedaCompleta(context.raw);
                             }
+                        }
+                    }
+                }
+            }
+        });
+
+        criarGrafico("graficoResumoContrato", {
+            type: "bar",
+            data: {
+                labels: [
+                    "Medido",
+                    "Pago",
+                    "A processar"
+                ],
+                datasets: [
+                    {
+                        label: "Valor",
+                        data: valoresResumoContrato,
+                        backgroundColor: [
+                            cores.grafite,
+                            cores.verde,
+                            cores.vermelho
+                        ],
+                        borderWidth: 0,
+                        hoverBorderWidth: 0,
+                        borderRadius: 0,
+                        barThickness: isMobile ? 20 : 34,
+                        maxBarThickness: isMobile ? 22 : 38
+                    }
+                ]
+            },
+            options: {
+                ...opcoesBase,
+                indexAxis: "y",
+                plugins: {
+                    ...opcoesBase.plugins,
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        ...opcoesBase.plugins.tooltip,
+                        callbacks: {
+                            label: function(context) {
+                                return moedaCompleta(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ...opcoesEscalaMoeda
+                    },
+                    y: {
+                        ticks: {
+                            color: cores.texto,
+                            font: {
+                                size: isMobile ? 11 : 13,
+                                weight: "600"
+                            }
+                        },
+                        grid: {
+                            display: false
                         }
                     }
                 }
