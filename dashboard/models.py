@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 
@@ -205,3 +206,66 @@ class Medicao(models.Model):
 
     def __str__(self):
         return f"{self.numero_medicao} - {self.numero_contrato}"
+
+
+class SincronizacaoHistorico(models.Model):
+    STATUS_CHOICES = [
+        ("sucesso", "Sucesso"),
+        ("erro", "Erro"),
+    ]
+
+    ORIGEM_CHOICES = [
+        ("manual", "Manual"),
+        ("automatica_navegador", "Automática pelo navegador"),
+        ("automatica_servidor", "Automática pelo servidor"),
+    ]
+
+    data_hora = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data/hora",
+    )
+
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Usuário",
+    )
+
+    origem = models.CharField(
+        max_length=50,
+        choices=ORIGEM_CHOICES,
+        default="manual",
+        verbose_name="Origem",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="sucesso",
+        verbose_name="Status",
+    )
+
+    total_contratos = models.IntegerField(
+        default=0,
+        verbose_name="Total de contratos",
+    )
+
+    total_medicoes = models.IntegerField(
+        default=0,
+        verbose_name="Total de medições",
+    )
+
+    mensagem = models.TextField(
+        blank=True,
+        verbose_name="Mensagem",
+    )
+
+    class Meta:
+        verbose_name = "Histórico de sincronização"
+        verbose_name_plural = "Histórico de sincronizações"
+        ordering = ["-data_hora"]
+
+    def __str__(self):
+        return f"{self.data_hora} - {self.status}"

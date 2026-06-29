@@ -4,21 +4,19 @@
 
 {% block page_header %}
     <div class="page-header">
-        <div class="container-fluid">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
             <div>
-                <h1 class="h3 mb-1">Contratos - Pedra Norte</h1>
-                <p class="mb-0">Acompanhamento dos contratos importados da planilha</p>
+                <h1 class="h3 mb-1">Contratos</h1>
+                <p class="mb-0">Consulta dos contratos importados da planilha</p>
+            </div>
 
-                <div class="sync-info">
-                    {% if ultima_sincronizacao %}
-                        Última sincronização:
-                        {{ ultima_sincronizacao|date:"d/m/Y" }}
-                        às
-                        {{ ultima_sincronizacao|date:"H:i" }}
-                    {% else %}
-                        Nenhuma sincronização realizada ainda.
-                    {% endif %}
-                </div>
+            <div>
+                <a
+                    href="{% url 'sincronizar_geral' %}"
+                    class="btn btn-dark"
+                >
+                    Sincronizar agora
+                </a>
             </div>
         </div>
     </div>
@@ -26,113 +24,85 @@
 
 {% block content %}
 
-    <div class="row mb-4">
+    <div class="card-info">
+        <div class="section-title">Filtros</div>
+
+        <form method="get">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Nº Contrato</label>
+                    <input
+                        type="text"
+                        name="contrato"
+                        class="form-control"
+                        value="{{ request.GET.contrato }}"
+                        placeholder="Ex: 302/2023"
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <input
+                        type="text"
+                        name="status"
+                        class="form-control"
+                        value="{{ request.GET.status }}"
+                        placeholder="Ex: Em execução"
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-dark">
+                        Filtrar
+                    </button>
+
+                    <a href="{% url 'contratos' %}" class="btn btn-outline-secondary">
+                        Limpar filtros
+                    </a>
+
+                    <a
+                        href="{% url 'exportar_contratos_excel' %}?contrato={{ request.GET.contrato }}&status={{ request.GET.status }}"
+                        class="btn btn-outline-success"
+                    >
+                        Exportar Excel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="row">
         <div class="col-md-3">
             <div class="card-info">
-                <div class="label">Total contratado</div>
-                <h4 class="mb-0">{{ total_contratado }}</h4>
+                <div class="label">Total de contratos</div>
+                <h4>{{ total_contratos|default:contratos|length }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Valor contratual</div>
+                <h4>R$ {{ total_valor_contratual|default:0|floatformat:2 }}</h4>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-info">
+                <div class="label">Valor total</div>
+                <h4>R$ {{ total_valor_total|default:0|floatformat:2 }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">Total medido</div>
-                <h4 class="mb-0">{{ total_medido }}</h4>
+                <h4>R$ {{ total_medido|default:0|floatformat:2 }}</h4>
             </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card-info">
-                <div class="label">Saldo estimado</div>
-                <h4 class="mb-0">{{ total_saldo }}</h4>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card-info">
-                <div class="label">Contratos</div>
-                <h4 class="mb-0">{{ total_contratos }}</h4>
-            </div>
-        </div>
-    </div>
-
-    <div class="card-info">
-        <form method="get" class="row align-items-end">
-            <div class="col-md-4">
-                <label for="contrato" class="form-label">
-                    Filtrar por contrato
-                </label>
-
-                <select id="contrato" name="contrato" class="form-select">
-                    <option value="">Todos os contratos</option>
-
-                    {% for numero_contrato in contratos_disponiveis %}
-                        <option
-                            value="{{ numero_contrato }}"
-                            {% if numero_contrato == contrato_filtro %}selected{% endif %}
-                        >
-                            {{ numero_contrato }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-4 mt-3 mt-md-0">
-                <label for="status" class="form-label">
-                    Filtrar por status
-                </label>
-
-                <select id="status" name="status" class="form-select">
-                    <option value="">Todos os status</option>
-
-                    {% for status in status_disponiveis %}
-                        <option
-                            value="{{ status }}"
-                            {% if status == status_filtro %}selected{% endif %}
-                        >
-                            {{ status }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-2 mt-3 mt-md-0">
-                <button type="submit" class="btn btn-dark w-100">
-                    Aplicar filtro
-                </button>
-            </div>
-
-            <div class="col-md-2 mt-3 mt-md-0">
-                <a href="{% url 'contratos' %}" class="btn btn-outline-secondary w-100">
-                    Limpar filtro
-                </a>
-            </div>
-        </form>
-
-        <div class="filter-summary small-muted">
-            {% if contrato_filtro or status_filtro %}
-                Exibindo contratos com:
-
-                {% if contrato_filtro %}
-                    <strong>Contrato {{ contrato_filtro }}</strong>
-                {% endif %}
-
-                {% if contrato_filtro and status_filtro %}
-                    e
-                {% endif %}
-
-                {% if status_filtro %}
-                    <strong>Status {{ status_filtro }}</strong>
-                {% endif %}
-                .
-            {% else %}
-                Exibindo todos os contratos.
-            {% endif %}
         </div>
     </div>
 
     <div class="table-container">
-        <div class="section-title">Tabela de contratos</div>
+        <div class="section-title">Lista de contratos</div>
 
         <table class="table table-bordered table-hover align-middle">
             <thead>
@@ -140,13 +110,18 @@
                     <th>Nº Contrato</th>
                     <th>Empresa</th>
                     <th>Objeto</th>
+                    <th>Valor Contratual</th>
+                    <th>Aditivos</th>
+                    <th>Reajustamento</th>
+                    <th>Reequilíbrio</th>
                     <th>Valor Total</th>
-                    <th>Valor Medido</th>
-                    <th>Saldo</th>
-                    <th>% Executado</th>
-                    <th>Status</th>
+                    <th>Garantia</th>
                     <th>Data Início</th>
                     <th>Data Fim</th>
+                    <th>Status</th>
+                    <th>% Executado</th>
+                    <th>MSM a Executar</th>
+                    <th>CSM a Executar</th>
                 </tr>
             </thead>
 
@@ -158,20 +133,40 @@
                                 {{ contrato.numero_contrato }}
                             </a>
                         </td>
+
                         <td>{{ contrato.empresa }}</td>
-                        <td class="text-limit">{{ contrato.objeto }}</td>
-                        <td>{{ contrato.valor_total }}</td>
-                        <td>{{ contrato.valor_medido }}</td>
-                        <td>{{ contrato.saldo }}</td>
-                        <td>{{ contrato.percentual_executado }}</td>
-                        <td>{{ contrato.status }}</td>
+
+                        <td class="text-limit">
+                            {{ contrato.objeto }}
+                        </td>
+
+                        <td>R$ {{ contrato.valor_contratual|floatformat:2 }}</td>
+                        <td>R$ {{ contrato.total_aditivos|floatformat:2 }}</td>
+                        <td>R$ {{ contrato.total_reajustamento|floatformat:2 }}</td>
+                        <td>R$ {{ contrato.reequilibrio|floatformat:2 }}</td>
+                        <td>R$ {{ contrato.valor_total|floatformat:2 }}</td>
+                        <td>{{ contrato.garantia }}</td>
                         <td>{{ contrato.data_inicio }}</td>
                         <td>{{ contrato.data_fim }}</td>
+
+                        <td>
+                            {% if contrato.status %}
+                                <span class="badge bg-secondary">
+                                    {{ contrato.status }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">Não informado</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ contrato.percentual_executado|floatformat:2 }}%</td>
+                        <td>R$ {{ contrato.valor_msm_a_executar|floatformat:2 }}</td>
+                        <td>R$ {{ contrato.valor_csm_a_executar|floatformat:2 }}</td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="10" class="text-center text-muted">
-                            Nenhum contrato encontrado para os filtros selecionados.
+                        <td colspan="15" class="text-center text-muted">
+                            Nenhum contrato encontrado.
                         </td>
                     </tr>
                 {% endfor %}

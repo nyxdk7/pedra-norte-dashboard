@@ -4,21 +4,19 @@
 
 {% block page_header %}
     <div class="page-header">
-        <div class="container-fluid">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
             <div>
-                <h1 class="h3 mb-1">Medições - Pedra Norte</h1>
-                <p class="mb-0">Dados carregados do banco local após sincronização com a planilha</p>
+                <h1 class="h3 mb-1">Medições</h1>
+                <p class="mb-0">Consulta das medições importadas da planilha</p>
+            </div>
 
-                <div class="sync-info">
-                    {% if ultima_sincronizacao %}
-                        Última sincronização:
-                        {{ ultima_sincronizacao|date:"d/m/Y" }}
-                        às
-                        {{ ultima_sincronizacao|date:"H:i" }}
-                    {% else %}
-                        Nenhuma sincronização realizada ainda.
-                    {% endif %}
-                </div>
+            <div>
+                <a
+                    href="{% url 'sincronizar_geral' %}"
+                    class="btn btn-dark"
+                >
+                    Sincronizar agora
+                </a>
             </div>
         </div>
     </div>
@@ -26,144 +24,148 @@
 
 {% block content %}
 
-    <div class="row mb-4">
+    <div class="card-info">
+        <div class="section-title">Filtros</div>
+
+        <form method="get">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Nº Contrato</label>
+                    <input
+                        type="text"
+                        name="contrato"
+                        class="form-control"
+                        value="{{ request.GET.contrato }}"
+                        placeholder="Ex: 302/2023"
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Situação</label>
+                    <input
+                        type="text"
+                        name="situacao"
+                        class="form-control"
+                        value="{{ request.GET.situacao }}"
+                        placeholder="Ex: Pago"
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-dark">
+                        Filtrar
+                    </button>
+
+                    <a href="{% url 'medicoes' %}" class="btn btn-outline-secondary">
+                        Limpar filtros
+                    </a>
+
+                    <a
+                        href="{% url 'exportar_medicoes_excel' %}?contrato={{ request.GET.contrato }}&situacao={{ request.GET.situacao }}"
+                        class="btn btn-outline-success"
+                    >
+                        Exportar Excel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="row">
         <div class="col-md-3">
             <div class="card-info">
-                <div class="label">Total medido</div>
-                <h4 class="mb-0">{{ total_medido }}</h4>
+                <div class="label">Total de medições</div>
+                <h4>{{ total_medicoes|default:medicoes|length }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
-                <div class="label">Total pago</div>
-                <h4 class="mb-0">{{ total_pago }}</h4>
+                <div class="label">Valor medido</div>
+                <h4>R$ {{ total_valor_medido|default:0|floatformat:2 }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
-                <div class="label">Total faturado</div>
-                <h4 class="mb-0">{{ total_faturado }}</h4>
+                <div class="label">Valor pago</div>
+                <h4>R$ {{ total_valor_pago|default:0|floatformat:2 }}</h4>
             </div>
         </div>
 
         <div class="col-md-3">
             <div class="card-info">
                 <div class="label">A processar</div>
-                <h4 class="mb-0">{{ total_processar }}</h4>
+                <h4>R$ {{ total_valor_a_processar|default:0|floatformat:2 }}</h4>
             </div>
         </div>
     </div>
 
-    <div class="card-info">
-        <form method="get" class="row align-items-end">
-            <div class="col-md-4">
-                <label for="contrato" class="form-label">
-                    Filtrar por contrato
-                </label>
-
-                <select id="contrato" name="contrato" class="form-select">
-                    <option value="">Todos os contratos</option>
-
-                    {% for contrato in contratos_disponiveis %}
-                        <option
-                            value="{{ contrato }}"
-                            {% if contrato == contrato_filtro %}selected{% endif %}
-                        >
-                            {{ contrato }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-4 mt-3 mt-md-0">
-                <label for="situacao" class="form-label">
-                    Filtrar por situação
-                </label>
-
-                <select id="situacao" name="situacao" class="form-select">
-                    <option value="">Todas as situações</option>
-
-                    {% for situacao in situacoes_disponiveis %}
-                        <option
-                            value="{{ situacao }}"
-                            {% if situacao == situacao_filtro %}selected{% endif %}
-                        >
-                            {{ situacao }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-2 mt-3 mt-md-0">
-                <button type="submit" class="btn btn-dark w-100">
-                    Aplicar filtro
-                </button>
-            </div>
-
-            <div class="col-md-2 mt-3 mt-md-0">
-                <a href="{% url 'medicoes' %}" class="btn btn-outline-secondary w-100">
-                    Limpar filtro
-                </a>
-            </div>
-        </form>
-
-        <div class="filter-summary small-muted">
-            {% if contrato_filtro or situacao_filtro %}
-                Exibindo medições com:
-
-                {% if contrato_filtro %}
-                    <strong>Contrato {{ contrato_filtro }}</strong>
-                {% endif %}
-
-                {% if contrato_filtro and situacao_filtro %}
-                    e
-                {% endif %}
-
-                {% if situacao_filtro %}
-                    <strong>Situação {{ situacao_filtro }}</strong>
-                {% endif %}
-                .
-            {% else %}
-                Exibindo todos os contratos e todas as situações.
-            {% endif %}
+    {% if labels_meses and valores_medido_mes %}
+        <div class="chart-container">
+            <div class="section-title">Valor medido por mês</div>
+            <canvas id="graficoMedicoes"></canvas>
         </div>
-    </div>
-
-    <div class="chart-container">
-        <div class="section-title">Evolução mensal do valor medido</div>
-        <canvas id="graficoMedicoes" height="90"></canvas>
-    </div>
-
-    <div class="card-info">
-        <div class="small-muted">Total de medições carregadas</div>
-        <strong>{{ total_linhas }}</strong>
-    </div>
+    {% endif %}
 
     <div class="table-container">
-        <div class="section-title">Tabela de medições</div>
+        <div class="section-title">Lista de medições</div>
 
         <table class="table table-bordered table-hover align-middle">
             <thead>
                 <tr>
-                    {% for coluna in cabecalho %}
-                        <th>{{ coluna }}</th>
-                    {% endfor %}
+                    <th>Nº Medição</th>
+                    <th>Nº Contrato</th>
+                    <th>Mês/Ano</th>
+                    <th>Valor Medido</th>
+                    <th>Valor Pago</th>
+                    <th>Data Pagamento</th>
+                    <th>Valor Liquidado</th>
+                    <th>Valor Faturado</th>
+                    <th>Data Faturamento</th>
+                    <th>A Processar</th>
+                    <th>Situação</th>
                 </tr>
             </thead>
 
             <tbody>
-                {% for linha in linhas %}
+                {% for medicao in medicoes %}
                     <tr>
-                        {% for item in linha %}
-                            <td>{{ item }}</td>
-                        {% endfor %}
+                        <td>{{ medicao.numero_medicao }}</td>
+
+                        <td>
+                            <a href="{% url 'contrato_detalhe' medicao.numero_contrato %}">
+                                {{ medicao.numero_contrato }}
+                            </a>
+                        </td>
+
+                        <td>{{ medicao.mes_ano }}</td>
+                        <td>R$ {{ medicao.valor_medido|floatformat:2 }}</td>
+                        <td>R$ {{ medicao.valor_pago|floatformat:2 }}</td>
+                        <td>{{ medicao.data_pagamento }}</td>
+                        <td>R$ {{ medicao.valor_liquidado|floatformat:2 }}</td>
+                        <td>R$ {{ medicao.valor_faturado|floatformat:2 }}</td>
+                        <td>{{ medicao.data_faturamento }}</td>
+                        <td>R$ {{ medicao.valor_a_processar|floatformat:2 }}</td>
+
+                        <td>
+                            {% if medicao.situacao == "Pago" %}
+                                <span class="badge bg-success">
+                                    {{ medicao.situacao }}
+                                </span>
+                            {% elif medicao.situacao %}
+                                <span class="badge bg-secondary">
+                                    {{ medicao.situacao }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">Não informado</span>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="{{ cabecalho|length }}" class="text-center text-muted">
-                            Nenhuma medição encontrada para os filtros selecionados.
+                        <td colspan="11" class="text-center text-muted">
+                            Nenhuma medição encontrada.
                         </td>
                     </tr>
                 {% endfor %}
@@ -174,54 +176,40 @@
 {% endblock %}
 
 {% block scripts %}
-    <script>
-        const labels = {{ grafico_labels|safe }};
-        const valores = {{ grafico_valores|safe }};
+    {% if labels_meses and valores_medido_mes %}
+        <script>
+            const labelsMedicoes = {{ labels_meses|safe }};
+            const valoresMedicoes = {{ valores_medido_mes|safe }};
 
-        const ctx = document.getElementById("graficoMedicoes");
+            const ctxMedicoes = document.getElementById("graficoMedicoes");
 
-        new Chart(ctx, {
-            type: "bar",
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: "Valor medido",
-                    data: valores,
-                    backgroundColor: "#69717a",
-                    borderColor: "#333",
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const valor = context.raw || 0;
-
-                                return "R$ " + valor.toLocaleString("pt-BR", {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2
-                                });
+            if (ctxMedicoes) {
+                new Chart(ctxMedicoes, {
+                    type: "bar",
+                    data: {
+                        labels: labelsMedicoes,
+                        datasets: [
+                            {
+                                label: "Valor medido",
+                                data: valoresMedicoes
                             }
-                        }
+                        ]
                     },
-                    legend: {
-                        display: true
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return "R$ " + value.toLocaleString("pt-BR");
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
                             }
                         }
                     }
-                }
+                });
             }
-        });
-    </script>
+        </script>
+    {% endif %}
 {% endblock %}

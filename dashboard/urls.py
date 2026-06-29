@@ -31,6 +31,12 @@ urlpatterns = [
         name="sincronizar_geral_api",
     ),
 
+    path(
+        "historico-sincronizacoes/",
+        views.historico_sincronizacoes,
+        name="historico_sincronizacoes",
+    ),
+
     path("contratos/", views.contratos, name="contratos"),
     path(
         "contratos/<path:numero_contrato>/",
@@ -49,4 +55,16 @@ urlpatterns = [
         views.sincronizar_medicoes,
         name="sincronizar_medicoes",
     ),
+
+    path(
+    "exportar/contratos/excel/",
+    views.exportar_contratos_excel_view,
+    name="exportar_contratos_excel",
+),
+
+    path(
+    "exportar/medicoes/excel/",
+    views.exportar_medicoes_excel_view,
+    name="exportar_medicoes_excel",
+),
 ]

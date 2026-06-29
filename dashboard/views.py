@@ -1,3 +1,6 @@
+from io import BytesIO
+
+from django.http import HttpResponse
 import json
 from collections import defaultdict
 from decimal import Decimal
@@ -8,11 +11,15 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
-from .models import Contrato, Medicao
+from .models import Contrato, Medicao, SincronizacaoHistorico
 from .services.google_sheets import read_sheet_range
 from .services.importador_contratos import importar_contratos
 from .services.importador_geral import sincronizar_tudo
 from .services.importador_medicoes import importar_medicoes
+from dashboard.services.exports.excel_exporter import (
+    exportar_contratos_excel,
+    exportar_medicoes_excel,
+)
 
 
 SPREADSHEET_ID = "1UDfxZbHEtbiIzB7HpxGg-nLSN1aJRrafi7blwiLjVMU"
@@ -339,19 +346,20 @@ def teste_sheets(request):
 
 @login_required
 def sincronizar_geral(request):
-    resultado = sincronizar_tudo()
+    resultado = sincronizar_tudo(
+        usuario=request.user,
+        origem="manual",
+    )
 
     if resultado["sucesso"]:
         messages.success(
             request,
-            f"Sincronização concluída: "
-            f"{resultado['total_contratos']} contratos e "
-            f"{resultado['total_medicoes']} medições atualizadas.",
+            resultado["mensagem"],
         )
     else:
         messages.error(
             request,
-            "Não foi possível concluir a sincronização geral.",
+            resultado["mensagem"],
         )
 
     return redirect("home")
@@ -359,13 +367,17 @@ def sincronizar_geral(request):
 
 @login_required
 def sincronizar_geral_api(request):
-    resultado = sincronizar_tudo()
+    resultado = sincronizar_tudo(
+        usuario=request.user,
+        origem="automatica_navegador",
+    )
 
     return JsonResponse(
         {
             "sucesso": resultado["sucesso"],
             "total_contratos": resultado["total_contratos"],
             "total_medicoes": resultado["total_medicoes"],
+            "mensagem": resultado["mensagem"],
         },
         json_dumps_params={"ensure_ascii": False},
     )
@@ -406,6 +418,19 @@ def sincronizar_contratos(request):
 
     return redirect("contratos")
 
+@login_required
+def historico_sincronizacoes(request):
+    historicos = SincronizacaoHistorico.objects.select_related(
+        "usuario"
+    ).all()[:100]
+
+    return render(
+        request,
+        "dashboard/historico_sincronizacoes.html",
+        {
+            "historicos": historicos,
+        },
+    )
 
 @login_required
 def contratos(request):
@@ -718,3 +743,66 @@ def medicoes(request):
             "grafico_valores": json.dumps(grafico_valores),
         },
     )
+
+@login_required
+def exportar_contratos_excel_view(request):
+    contratos_queryset = Contrato.objects.all()
+
+    numero_contrato = request.GET.get("contrato", "")
+    status = request.GET.get("status", "")
+
+    if numero_contrato:
+        contratos_queryset = contratos_queryset.filter(
+            numero_contrato__icontains=numero_contrato
+        )
+
+    if status:
+        contratos_queryset = contratos_queryset.filter(
+            status__icontains=status
+        )
+
+    workbook = exportar_contratos_excel(contratos_queryset)
+
+    arquivo = BytesIO()
+    workbook.save(arquivo)
+    arquivo.seek(0)
+
+    response = HttpResponse(
+        arquivo.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = 'attachment; filename="contratos_pedra_norte.xlsx"'
+
+    return response
+
+
+@login_required
+def exportar_medicoes_excel_view(request):
+    medicoes_queryset = Medicao.objects.all()
+
+    numero_contrato = request.GET.get("contrato", "")
+    situacao = request.GET.get("situacao", "")
+
+    if numero_contrato:
+        medicoes_queryset = medicoes_queryset.filter(
+            numero_contrato__icontains=numero_contrato
+        )
+
+    if situacao:
+        medicoes_queryset = medicoes_queryset.filter(
+            situacao__icontains=situacao
+        )
+
+    workbook = exportar_medicoes_excel(medicoes_queryset)
+
+    arquivo = BytesIO()
+    workbook.save(arquivo)
+    arquivo.seek(0)
+
+    response = HttpResponse(
+        arquivo.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = 'attachment; filename="medicoes_pedra_norte.xlsx"'
+
+    return response

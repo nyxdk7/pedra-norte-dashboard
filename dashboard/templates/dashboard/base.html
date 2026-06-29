@@ -476,6 +476,15 @@
                     <span class="sidebar-icon">▣</span>
                     <span class="sidebar-label">Dashboard</span>
                 </a>
+                
+                <a
+                    class="sidebar-link {% if request.resolver_match.url_name == 'historico_sincronizacoes' %}active{% endif %}"
+                    href="{% url 'historico_sincronizacoes' %}"
+                    title="Histórico"
+                >
+                    <span class="sidebar-icon">◷</span>
+                    <span class="sidebar-label">Histórico</span>
+                </a>
 
                 <a
                     class="sidebar-link {% if request.resolver_match.url_name == 'contratos' or request.resolver_match.url_name == 'contrato_detalhe' %}active{% endif %}"
