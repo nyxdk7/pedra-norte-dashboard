@@ -7,7 +7,6 @@ export default function ConfiguracoesPage() {
       <AppHeader
         title="Configurações"
         subtitle="Ajustes visuais e preferências do sistema"
-        currentPage="Configurações"
       />
 
       <ConfiguracoesClient />
