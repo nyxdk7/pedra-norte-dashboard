@@ -11,12 +11,14 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { Brand } from "@/components/brand";
+import { usuarioPodeAdministrar } from "@/lib/api";
 
-const menuItems = [
+const menuBaseItems = [
   {
     label: "Dashboard",
     href: "/dashboard",
@@ -44,6 +46,12 @@ const menuItems = [
   },
 ];
 
+const adminItem = {
+  label: "Administrador",
+  href: "/administrador",
+  icon: ShieldCheck,
+};
+
 type AppSidebarProps = {
   collapsed: boolean;
   onToggle: () => void;
@@ -61,7 +69,11 @@ function obterNomeUsuario(usuario: {
   return nomeCompleto || usuario.username;
 }
 
-function obterPerfilUsuario(grupos: string[]) {
+function obterPerfilUsuario(grupos: string[], isSuperuser: boolean) {
+  if (isSuperuser) {
+    return "Administrador";
+  }
+
   if (!grupos.length) {
     return "Usuário";
   }
@@ -90,8 +102,15 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
   const nomeUsuario = usuario ? obterNomeUsuario(usuario) : "Usuário";
   const perfilUsuario = usuario
-    ? obterPerfilUsuario(usuario.permissions.grupos)
+    ? obterPerfilUsuario(
+        usuario.permissions.grupos,
+        usuario.permissions.is_superuser,
+      )
     : "Usuário";
+
+  const menuItems = usuarioPodeAdministrar(usuario)
+    ? [...menuBaseItems, adminItem]
+    : menuBaseItems;
 
   async function handleSair() {
     await sair();

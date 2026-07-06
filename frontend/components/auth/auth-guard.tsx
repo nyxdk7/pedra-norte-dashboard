@@ -1,43 +1,59 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, type ReactNode } from "react";
 
 import { Brand } from "@/components/brand";
 import { useAuth } from "@/components/auth/auth-provider";
 
 type AuthGuardProps = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export function AuthGuard({ children }: AuthGuardProps) {
+  const pathname = usePathname();
   const router = useRouter();
-  const { carregando, autenticado } = useAuth();
+  const { carregando, autenticado, usuario } = useAuth();
 
   useEffect(() => {
-    if (!carregando && !autenticado) {
-      router.replace("/login");
+    if (carregando) {
+      return;
     }
-  }, [carregando, autenticado, router]);
+
+    if (!autenticado) {
+      router.replace("/login");
+      return;
+    }
+
+    if (usuario?.deve_trocar_senha && pathname !== "/alterar-senha") {
+      router.replace("/alterar-senha");
+      return;
+    }
+
+    if (!usuario?.deve_trocar_senha && pathname === "/alterar-senha") {
+      router.replace("/dashboard");
+    }
+  }, [carregando, autenticado, usuario, pathname, router]);
 
   if (carregando) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-        <div className="border border-slate-200 bg-white px-8 py-7 shadow-sm">
-          <div className="mb-5 flex justify-center">
-            <Brand />
-          </div>
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
+        <div className="w-full max-w-md border border-slate-200 bg-white p-6 shadow-sm">
+          <Brand />
 
-          <div className="flex items-center justify-center gap-3 text-sm font-semibold text-slate-600">
-            <span className="h-4 w-4 animate-spin border-2 border-slate-300 border-t-slate-900" />
+          <p className="mt-6 text-sm font-semibold text-slate-500">
             Verificando sessão...
-          </div>
+          </p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!autenticado) {
+    return null;
+  }
+
+  if (usuario?.deve_trocar_senha && pathname !== "/alterar-senha") {
     return null;
   }
 

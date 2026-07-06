@@ -45,7 +45,6 @@ export async function apiRequest<T>(
   });
 
   let data: unknown = null;
-
   const contentType = response.headers.get("content-type");
 
   if (contentType?.includes("application/json")) {
@@ -96,10 +95,11 @@ export async function baixarArquivo(path: string, nomeArquivo: string) {
 
   const blob = await response.blob();
   const downloadUrl = window.URL.createObjectURL(blob);
-
   const link = document.createElement("a");
+
   link.href = downloadUrl;
   link.download = nomeArquivo;
+
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -123,11 +123,45 @@ export type UsuarioLogado = {
   last_name: string;
   email: string;
   permissions: UsuarioPermissoes;
+  deve_trocar_senha: boolean;
 };
 
 export type LoginResponse = {
   detail: string;
-  user: UsuarioLogado;
+  user: Omit<UsuarioLogado, "deve_trocar_senha">;
+};
+
+type PasswordStatusResponse = {
+  deve_trocar_senha: boolean;
+};
+
+export type UsuarioAdminResumo = {
+  id: number;
+  username: string;
+  nome: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  is_active: boolean;
+  is_superuser: boolean;
+  grupos: string[];
+  deve_trocar_senha: boolean;
+  date_joined: string | null;
+};
+
+export type UsuariosAdminResponse = {
+  results: UsuarioAdminResumo[];
+};
+
+export type CriarUsuarioPayload = {
+  nome: string;
+  username: string;
+  senha_temporaria: string;
+};
+
+export type CriarUsuarioResponse = {
+  detail: string;
+  usuario: UsuarioAdminResumo;
 };
 
 export type DashboardCards = {
@@ -280,6 +314,17 @@ export type ContratoDetalheFiltros = {
   situacao?: string;
 };
 
+export function usuarioPodeAdministrar(usuario: UsuarioLogado | null) {
+  if (!usuario) {
+    return false;
+  }
+
+  return (
+    usuario.permissions.is_superuser ||
+    usuario.permissions.grupos.includes("Administrador")
+  );
+}
+
 export async function loginUsuario(username: string, password: string) {
   return apiRequest<LoginResponse>("/auth/login/", {
     method: "POST",
@@ -291,12 +336,50 @@ export async function loginUsuario(username: string, password: string) {
 }
 
 export async function buscarUsuarioLogado() {
-  return apiRequest<UsuarioLogado>("/auth/me/");
+  const usuario = await apiRequest<Omit<UsuarioLogado, "deve_trocar_senha">>(
+    "/auth/me/",
+  );
+
+  const statusSenha = await apiRequest<PasswordStatusResponse>(
+    "/auth/password-status/",
+  );
+
+  return {
+    ...usuario,
+    deve_trocar_senha: statusSenha.deve_trocar_senha,
+  };
 }
 
 export async function logoutUsuario() {
   return apiRequest<{ detail: string }>("/auth/logout/", {
     method: "POST",
+  });
+}
+
+export async function alterarSenhaObrigatoria(
+  novaSenha: string,
+  confirmarSenha: string,
+) {
+  return apiRequest<{
+    detail: string;
+    deve_trocar_senha: boolean;
+  }>("/auth/change-password/", {
+    method: "POST",
+    body: {
+      nova_senha: novaSenha,
+      confirmar_senha: confirmarSenha,
+    },
+  });
+}
+
+export async function buscarUsuariosAdmin() {
+  return apiRequest<UsuariosAdminResponse>("/admin/usuarios/");
+}
+
+export async function criarUsuarioAdmin(payload: CriarUsuarioPayload) {
+  return apiRequest<CriarUsuarioResponse>("/admin/usuarios/", {
+    method: "POST",
+    body: payload,
   });
 }
 
@@ -351,7 +434,7 @@ export async function exportarContratosExcel(
 
   return baixarArquivo(
     `/exportar/contratos/excel/${queryString}`,
-    "contratos_pedra_norte.xlsx",
+    "contratos_msm_industrial.xlsx",
   );
 }
 
@@ -365,14 +448,14 @@ export async function exportarMedicoesExcel(
 
   return baixarArquivo(
     `/exportar/medicoes/excel/${queryString}`,
-    "medicoes_pedra_norte.xlsx",
+    "medicoes_msm_industrial.xlsx",
   );
 }
 
 export async function baixarContratoPdf(numeroContrato: string) {
   const nomeArquivo = `contrato_${numeroContrato
     .replaceAll("/", "-")
-    .replaceAll("\\", "-")}_pedra_norte.pdf`;
+    .replaceAll("\\", "-")}_msm_industrial.pdf`;
 
   return baixarArquivo(
     `/contratos/${encodeURIComponent(numeroContrato)}/pdf/`,

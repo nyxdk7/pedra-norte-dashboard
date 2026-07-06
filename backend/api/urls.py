@@ -1,6 +1,11 @@
 from django.urls import path
 
 from api import views
+from api.admin_views import (
+    alterar_senha_obrigatoria_api,
+    password_status_api,
+    usuarios_admin_api,
+)
 from api.pdf_reports import exportar_dashboard_pdf
 from dashboard.views import exportar_contrato_pdf_view
 
@@ -8,6 +13,10 @@ urlpatterns = [
     path("auth/login/", views.login_api, name="api_login"),
     path("auth/logout/", views.logout_api, name="api_logout"),
     path("auth/me/", views.me_api, name="api_me"),
+    path("auth/password-status/", password_status_api, name="api_password_status"),
+    path("auth/change-password/", alterar_senha_obrigatoria_api, name="api_change_password"),
+
+    path("admin/usuarios/", usuarios_admin_api, name="api_admin_usuarios"),
 
     path("dashboard/", views.dashboard_api, name="api_dashboard"),
 
