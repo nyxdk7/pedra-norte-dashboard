@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ClipboardList,
   ExternalLink,
-  FileDown,
+  FileSpreadsheet,
+  FileText,
   Landmark,
   Percent,
   RefreshCw,
@@ -13,6 +14,7 @@ import {
 
 import { MetricCard } from "@/components/layout/metric-card";
 import {
+  API_BASE_URL,
   buscarContratos,
   exportarContratosExcel,
   type Contrato,
@@ -83,10 +85,7 @@ function statusBadge(status: string) {
 
   return (
     <span
-      className={[
-        "inline-flex items-center px-2.5 py-1 text-xs font-semibold",
-        classes,
-      ].join(" ")}
+      className={`inline-flex items-center px-2 py-1 text-xs font-bold ${classes}`}
     >
       {texto}
     </span>
@@ -95,8 +94,7 @@ function statusBadge(status: string) {
 
 function ContratosLoading() {
   return (
-    <div className="border border-slate-200 bg-white px-5 py-8 text-sm font-semibold text-slate-500 shadow-sm">
-      <span className="mr-3 inline-block h-4 w-4 animate-spin border-2 border-slate-300 border-t-slate-900 align-[-2px]" />
+    <div className="border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
       Carregando contratos...
     </div>
   );
@@ -107,14 +105,19 @@ type ContratoCardMobileProps = {
 };
 
 function ContratoCardMobile({ contrato }: ContratoCardMobileProps) {
+  const hrefDetalhe = `/contratos/${encodeURIComponent(
+    contrato.numero_contrato,
+  )}`;
+
   return (
     <article className="border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
             Contrato
           </p>
-          <h3 className="mt-1 text-base font-bold text-slate-950">
+
+          <h3 className="mt-1 text-base font-black text-slate-950">
             {contrato.numero_contrato || "-"}
           </h3>
         </div>
@@ -122,23 +125,32 @@ function ContratoCardMobile({ contrato }: ContratoCardMobileProps) {
         {statusBadge(contrato.status)}
       </div>
 
-      <div className="mt-4 space-y-3 text-sm">
+      <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <p className="text-xs font-bold uppercase text-slate-400">Empresa</p>
-          <p className="mt-1 text-slate-800">{contrato.empresa || "-"}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+            Empresa
+          </p>
+
+          <p className="mt-1 font-semibold text-slate-800">
+            {contrato.empresa || "-"}
+          </p>
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase text-slate-400">Valor</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+            Valor
+          </p>
+
           <p className="mt-1 font-semibold text-slate-950">
             {formatarMoeda(contrato.valor_total)}
           </p>
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase text-slate-400">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
             Execução
           </p>
+
           <p className="mt-1 font-semibold text-slate-950">
             {formatarPercentual(contrato.percentual_executado)}
           </p>
@@ -146,11 +158,11 @@ function ContratoCardMobile({ contrato }: ContratoCardMobileProps) {
       </div>
 
       <Link
-        href={`/contratos/${encodeURIComponent(contrato.numero_contrato)}`}
-        className="mt-4 flex h-10 items-center justify-center gap-2 border border-slate-300 text-sm font-semibold text-slate-700"
+        href={hrefDetalhe}
+        className="mt-4 inline-flex h-10 items-center justify-center gap-2 border border-slate-300 px-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
       >
         Ver detalhes
-        <ExternalLink size={16} />
+        <ExternalLink className="h-4 w-4" />
       </Link>
     </article>
   );
@@ -159,7 +171,7 @@ function ContratoCardMobile({ contrato }: ContratoCardMobileProps) {
 export function ContratosClient() {
   const [dados, setDados] = useState<ContratosResponse | null>(null);
   const [carregando, setCarregando] = useState(true);
-  const [exportando, setExportando] = useState(false);
+  const [exportandoExcel, setExportandoExcel] = useState(false);
   const [erro, setErro] = useState("");
 
   const [contrato, setContrato] = useState("");
@@ -228,9 +240,36 @@ export function ContratosClient() {
     setStatus("");
   }
 
-  async function handleExportar() {
+  function montarQueryStringAtual() {
+    const params = new URLSearchParams();
+
+    if (contrato.trim()) {
+      params.set("contrato", contrato.trim());
+    }
+
+    if (status.trim()) {
+      params.set("status", status.trim());
+    }
+
+    const queryString = params.toString();
+
+    return queryString ? `?${queryString}` : "";
+  }
+
+  function handleExportarPdf() {
+    setErro("");
+
+    const url = `${API_BASE_URL}/relatorios/dashboard/pdf/${montarQueryStringAtual()}`;
+    const janela = window.open(url, "_blank", "noopener,noreferrer");
+
+    if (!janela) {
+      window.location.href = url;
+    }
+  }
+
+  async function handleExportarExcel() {
     try {
-      setExportando(true);
+      setExportandoExcel(true);
       setErro("");
 
       await exportarContratosExcel({
@@ -245,7 +284,7 @@ export function ContratosClient() {
 
       setErro(mensagem);
     } finally {
-      setExportando(false);
+      setExportandoExcel(false);
     }
   }
 
@@ -254,19 +293,15 @@ export function ContratosClient() {
   const podeExportar = Boolean(dados?.permissions.pode_exportar);
 
   return (
-    <div className="space-y-6 px-5 py-6 lg:px-8">
-      <section className="border border-slate-200 bg-white shadow-sm">
-        <div className="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-[1fr_1fr_auto_auto]">
+    <div className="space-y-6">
+      <section className="border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="grid gap-4 xl:grid-cols-[1fr_1fr_auto_auto_auto]">
           <div>
-            <label
-              htmlFor="contrato"
-              className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-400"
-            >
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
               Contrato
             </label>
 
             <select
-              id="contrato"
               value={contrato}
               onChange={(event) => setContrato(event.target.value)}
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
@@ -282,15 +317,11 @@ export function ContratosClient() {
           </div>
 
           <div>
-            <label
-              htmlFor="status"
-              className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-400"
-            >
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
               Status
             </label>
 
             <select
-              id="status"
               value={status}
               onChange={(event) => setStatus(event.target.value)}
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
@@ -309,7 +340,7 @@ export function ContratosClient() {
             <button
               type="button"
               onClick={limparFiltros}
-              className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 md:w-auto"
+              className="h-11 w-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 xl:w-auto"
             >
               Limpar
             </button>
@@ -318,27 +349,39 @@ export function ContratosClient() {
           <div className="flex items-end">
             <button
               type="button"
-              onClick={handleExportar}
-              disabled={!podeExportar || exportando}
-              className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400 md:w-auto"
+              onClick={handleExportarPdf}
+              disabled={!podeExportar}
+              className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
             >
-              <FileDown size={17} />
-              {exportando ? "Exportando..." : "Exportar"}
+              <FileText className="h-4 w-4" />
+              PDF
+            </button>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleExportarExcel}
+              disabled={!podeExportar || exportandoExcel}
+              className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              {exportandoExcel ? "Exportando..." : "XLS"}
             </button>
           </div>
         </div>
       </section>
 
       {erro && (
-        <section className="border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+        <div className="border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
           {erro}
-        </section>
+        </div>
       )}
 
       {carregando && <ContratosLoading />}
 
       {!carregando && cards && (
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <MetricCard
             label="Contratos"
             value={formatarNumero(cards.total_contratos)}
@@ -378,11 +421,12 @@ export function ContratosClient() {
 
       {!carregando && (
         <section className="border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-base font-bold text-slate-950">
+              <h2 className="text-base font-black text-slate-950">
                 Contratos cadastrados
               </h2>
+
               <p className="mt-1 text-sm text-slate-500">
                 Total encontrado: {formatarNumero(contratos.length)}
               </p>
@@ -398,12 +442,12 @@ export function ContratosClient() {
               }
               className="flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              <RefreshCw size={17} />
+              <RefreshCw className="h-4 w-4" />
               Atualizar
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 p-4 lg:hidden">
+          <div className="grid gap-4 p-4 lg:hidden">
             {contratos.length ? (
               contratos.map((item) => (
                 <ContratoCardMobile
@@ -412,81 +456,88 @@ export function ContratosClient() {
                 />
               ))
             ) : (
-              <p className="text-sm text-slate-500">
+              <div className="border border-slate-200 bg-white p-5 text-sm text-slate-500">
                 Nenhum contrato encontrado.
-              </p>
+              </div>
             )}
           </div>
 
           <div className="hidden overflow-x-auto lg:block">
-            <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
-              <thead className="bg-slate-100 text-xs uppercase tracking-[0.08em] text-slate-500">
-                <tr>
-                  <th className="px-5 py-3">Contrato</th>
-                  <th className="px-5 py-3">Empresa</th>
-                  <th className="px-5 py-3">Objeto</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Início</th>
-                  <th className="px-5 py-3">Fim</th>
-                  <th className="px-5 py-3">Valor total</th>
-                  <th className="px-5 py-3">Execução</th>
-                  <th className="px-5 py-3">Ações</th>
+            <table className="min-w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                  <th className="px-4 py-3">Contrato</th>
+                  <th className="px-4 py-3">Empresa</th>
+                  <th className="px-4 py-3">Objeto</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Início</th>
+                  <th className="px-4 py-3">Fim</th>
+                  <th className="px-4 py-3">Valor total</th>
+                  <th className="px-4 py-3">Execução</th>
+                  <th className="px-4 py-3">Ações</th>
                 </tr>
               </thead>
 
               <tbody>
                 {contratos.length ? (
-                  contratos.map((item) => (
-                    <tr
-                      key={item.numero_contrato}
-                      className="border-t border-slate-200 align-top"
-                    >
-                      <td className="px-5 py-4 font-bold text-slate-950">
-                        {item.numero_contrato || "-"}
-                      </td>
+                  contratos.map((item) => {
+                    const hrefDetalhe = `/contratos/${encodeURIComponent(
+                      item.numero_contrato,
+                    )}`;
 
-                      <td className="px-5 py-4 text-slate-700">
-                        {item.empresa || "-"}
-                      </td>
+                    return (
+                      <tr
+                        key={item.numero_contrato}
+                        className="border-b border-slate-100 text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3 font-semibold text-slate-950">
+                          {item.numero_contrato || "-"}
+                        </td>
 
-                      <td className="max-w-[360px] px-5 py-4 text-slate-600">
-                        <p className="line-clamp-3">{item.objeto || "-"}</p>
-                      </td>
+                        <td className="px-4 py-3">{item.empresa || "-"}</td>
 
-                      <td className="px-5 py-4">{statusBadge(item.status)}</td>
+                        <td className="max-w-[360px] px-4 py-3">
+                          {item.objeto || "-"}
+                        </td>
 
-                      <td className="px-5 py-4 text-slate-600">
-                        {formatarData(item.data_inicio)}
-                      </td>
+                        <td className="px-4 py-3">
+                          {statusBadge(item.status)}
+                        </td>
 
-                      <td className="px-5 py-4 text-slate-600">
-                        {formatarData(item.data_fim)}
-                      </td>
+                        <td className="px-4 py-3">
+                          {formatarData(item.data_inicio)}
+                        </td>
 
-                      <td className="px-5 py-4 font-semibold text-slate-950">
-                        {formatarMoeda(item.valor_total)}
-                      </td>
+                        <td className="px-4 py-3">
+                          {formatarData(item.data_fim)}
+                        </td>
 
-                      <td className="px-5 py-4 font-semibold text-slate-950">
-                        {formatarPercentual(item.percentual_executado)}
-                      </td>
+                        <td className="px-4 py-3 font-semibold text-slate-950">
+                          {formatarMoeda(item.valor_total)}
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <Link
-                          href={`/contratos/${encodeURIComponent(
-                            item.numero_contrato,
-                          )}`}
-                          className="inline-flex h-9 items-center gap-2 border border-slate-300 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Ver
-                          <ExternalLink size={15} />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="px-4 py-3 font-semibold text-slate-950">
+                          {formatarPercentual(item.percentual_executado)}
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <Link
+                            href={hrefDetalhe}
+                            className="inline-flex h-9 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
+                          >
+                            Ver
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
-                  <tr className="border-t border-slate-200">
-                    <td className="px-5 py-5 text-slate-400" colSpan={9}>
+                  <tr>
+                    <td
+                      colSpan={9}
+                      className="px-4 py-8 text-center text-sm text-slate-500"
+                    >
                       Nenhum contrato encontrado.
                     </td>
                   </tr>
