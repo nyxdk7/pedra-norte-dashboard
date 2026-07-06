@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Banknote,
   FileDown,
@@ -8,7 +8,6 @@ import {
   Landmark,
   ReceiptText,
   RefreshCw,
-  Search,
   Wallet,
 } from "lucide-react";
 import {
@@ -154,7 +153,7 @@ export function MedicoesClient() {
   const [opcoesContrato, setOpcoesContrato] = useState<SelectOption[]>([]);
   const [opcoesSituacao, setOpcoesSituacao] = useState<SelectOption[]>([]);
 
-  async function carregarOpcoesFiltros() {
+  const carregarOpcoesFiltros = useCallback(async () => {
     try {
       const [contratosResposta, medicoesResposta] = await Promise.all([
         buscarContratos(),
@@ -177,48 +176,46 @@ export function MedicoesClient() {
       setOpcoesContrato([]);
       setOpcoesSituacao([]);
     }
-  }
+  }, []);
 
-  async function carregarMedicoes(filtros: MedicoesRequestFiltros = {}) {
-    try {
-      setCarregando(true);
-      setErro("");
+  const carregarMedicoes = useCallback(
+    async (filtros: MedicoesRequestFiltros = {}) => {
+      try {
+        setCarregando(true);
+        setErro("");
 
-      const resposta = await buscarMedicoes(filtros);
+        const resposta = await buscarMedicoes(filtros);
 
-      setDados(resposta);
-    } catch (error) {
-      const mensagem =
-        error instanceof Error
-          ? error.message
-          : "Não foi possível carregar as medições.";
+        setDados(resposta);
+      } catch (error) {
+        const mensagem =
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar as medições.";
 
-      setErro(mensagem);
-      setDados(null);
-    } finally {
-      setCarregando(false);
-    }
-  }
+        setErro(mensagem);
+        setDados(null);
+      } finally {
+        setCarregando(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     carregarOpcoesFiltros();
-    carregarMedicoes();
-  }, []);
+  }, [carregarOpcoesFiltros]);
 
-  function aplicarFiltros(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  useEffect(() => {
     carregarMedicoes({
       contrato,
       situacao,
     });
-  }
+  }, [contrato, situacao, carregarMedicoes]);
 
   function limparFiltros() {
     setContrato("");
     setSituacao("");
-
-    carregarMedicoes();
   }
 
   async function handleExportar() {
@@ -250,10 +247,7 @@ export function MedicoesClient() {
   return (
     <div className="space-y-6 px-5 py-6 lg:px-8">
       <section className="border border-slate-200 bg-white shadow-sm">
-        <form
-          onSubmit={aplicarFiltros}
-          className="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-[1fr_1fr_auto_auto_auto]"
-        >
+        <div className="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-[1fr_1fr_auto_auto]">
           <div>
             <label
               htmlFor="contrato"
@@ -304,16 +298,6 @@ export function MedicoesClient() {
 
           <div className="flex items-end">
             <button
-              type="submit"
-              className="flex h-11 w-full items-center justify-center gap-2 bg-[#111827] px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:w-auto"
-            >
-              <Search size={17} />
-              Filtrar
-            </button>
-          </div>
-
-          <div className="flex items-end">
-            <button
               type="button"
               onClick={limparFiltros}
               className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 md:w-auto"
@@ -333,7 +317,7 @@ export function MedicoesClient() {
               {exportando ? "Exportando..." : "Exportar"}
             </button>
           </div>
-        </form>
+        </div>
       </section>
 
       {erro && (

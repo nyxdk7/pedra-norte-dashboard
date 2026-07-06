@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -10,7 +10,6 @@ import {
   Landmark,
   Percent,
   RefreshCw,
-  Search,
   Wallet,
 } from "lucide-react";
 import {
@@ -142,7 +141,7 @@ export function DashboardClient() {
   const [opcoesStatus, setOpcoesStatus] = useState<SelectOption[]>([]);
   const [opcoesSituacao, setOpcoesSituacao] = useState<SelectOption[]>([]);
 
-  async function carregarOpcoesFiltros() {
+  const carregarOpcoesFiltros = useCallback(async () => {
     try {
       const [contratosResposta, medicoesResposta] = await Promise.all([
         buscarContratos(),
@@ -172,50 +171,48 @@ export function DashboardClient() {
       setOpcoesStatus([]);
       setOpcoesSituacao([]);
     }
-  }
+  }, []);
 
-  async function carregarDashboard(filtros: DashboardRequestFiltros = {}) {
-    try {
-      setCarregando(true);
-      setErro("");
+  const carregarDashboard = useCallback(
+    async (filtros: DashboardRequestFiltros = {}) => {
+      try {
+        setCarregando(true);
+        setErro("");
 
-      const dados = await buscarDashboard(filtros);
+        const dados = await buscarDashboard(filtros);
 
-      setDashboard(dados);
-    } catch (error) {
-      const mensagem =
-        error instanceof Error
-          ? error.message
-          : "Não foi possível carregar o dashboard.";
+        setDashboard(dados);
+      } catch (error) {
+        const mensagem =
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar o dashboard.";
 
-      setErro(mensagem);
-      setDashboard(null);
-    } finally {
-      setCarregando(false);
-    }
-  }
+        setErro(mensagem);
+        setDashboard(null);
+      } finally {
+        setCarregando(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     carregarOpcoesFiltros();
-    carregarDashboard();
-  }, []);
+  }, [carregarOpcoesFiltros]);
 
-  function aplicarFiltros(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  useEffect(() => {
     carregarDashboard({
       contrato,
       status,
       situacao,
     });
-  }
+  }, [contrato, status, situacao, carregarDashboard]);
 
   function limparFiltros() {
     setContrato("");
     setStatus("");
     setSituacao("");
-
-    carregarDashboard();
   }
 
   const cards = dashboard?.cards;
@@ -232,10 +229,7 @@ export function DashboardClient() {
   return (
     <div className="space-y-6 px-5 py-6 lg:px-8">
       <section className="border border-slate-200 bg-white shadow-sm">
-        <form
-          onSubmit={aplicarFiltros}
-          className="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-[1fr_1fr_1fr_auto_auto]"
-        >
+        <div className="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-[1fr_1fr_1fr_auto]">
           <div>
             <label
               htmlFor="contrato"
@@ -310,16 +304,6 @@ export function DashboardClient() {
 
           <div className="flex items-end">
             <button
-              type="submit"
-              className="flex h-11 w-full items-center justify-center gap-2 bg-[#111827] px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:w-auto"
-            >
-              <Search size={17} />
-              Filtrar
-            </button>
-          </div>
-
-          <div className="flex items-end">
-            <button
               type="button"
               onClick={limparFiltros}
               className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 md:w-auto"
@@ -327,7 +311,7 @@ export function DashboardClient() {
               Limpar
             </button>
           </div>
-        </form>
+        </div>
       </section>
 
       {erro && (
