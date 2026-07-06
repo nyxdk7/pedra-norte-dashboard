@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
+
+import { PwaRegister } from "@/components/pwa/pwa-register";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -6,14 +10,17 @@ export const metadata: Metadata = {
   description: "Sistema interno de medições",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+type RootLayoutProps = {
+  children: ReactNode;
+};
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <PwaRegister />
+        {children}
+      </body>
     </html>
   );
 }
