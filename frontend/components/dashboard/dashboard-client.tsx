@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -112,7 +112,7 @@ function ChartLoadingState() {
 type ChartCardProps = {
   title: string;
   subtitle: string;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 function ChartCard({ title, subtitle, children }: ChartCardProps) {
@@ -401,18 +401,21 @@ export function DashboardClient() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={evolucaoMensal}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
                   <XAxis
                     dataKey="mes_ano"
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                   />
+
                   <YAxis
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                     tickFormatter={(value) => formatarMoedaCompacta(value)}
                   />
+
                   <Tooltip
                     formatter={(value) => [
                       formatarMoeda(Number(value)),
@@ -420,6 +423,7 @@ export function DashboardClient() {
                     ]}
                     labelFormatter={(label) => `Mês: ${label}`}
                   />
+
                   <Line
                     type="monotone"
                     dataKey="valor_medido"
@@ -447,24 +451,28 @@ export function DashboardClient() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={resumoFinanceiro}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
                   <XAxis
                     dataKey="nome"
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                   />
+
                   <YAxis
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                     tickFormatter={(value) => formatarMoedaCompacta(value)}
                   />
+
                   <Tooltip
                     formatter={(value) => [
                       formatarMoeda(Number(value)),
                       "Valor",
                     ]}
                   />
+
                   <Bar
                     dataKey="valor"
                     fill="#111827"
@@ -492,18 +500,21 @@ export function DashboardClient() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={contratadoMedido}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
                   <XAxis
                     dataKey="numero_contrato"
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                   />
+
                   <YAxis
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                     tickFormatter={(value) => formatarMoedaCompacta(value)}
                   />
+
                   <Tooltip
                     formatter={(value, name) => [
                       formatarMoeda(Number(value)),
@@ -513,13 +524,16 @@ export function DashboardClient() {
                     ]}
                     labelFormatter={(label) => `Contrato: ${label}`}
                   />
+
                   <Legend />
+
                   <Bar
                     dataKey="valor_contratado"
                     name="Contratado"
                     fill="#111827"
                     maxBarSize={42}
                   />
+
                   <Bar
                     dataKey="valor_medido"
                     name="Medido"
@@ -554,6 +568,7 @@ export function DashboardClient() {
                   }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
                   <XAxis
                     type="number"
                     tick={{ fontSize: 12, fill: "#475569" }}
@@ -561,6 +576,7 @@ export function DashboardClient() {
                     tickLine={{ stroke: "#cbd5e1" }}
                     tickFormatter={(value) => `${value}%`}
                   />
+
                   <YAxis
                     type="category"
                     dataKey="numero_contrato"
@@ -569,6 +585,7 @@ export function DashboardClient() {
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                   />
+
                   <Tooltip
                     formatter={(value) => [
                       formatarPercentual(Number(value)),
@@ -576,6 +593,7 @@ export function DashboardClient() {
                     ]}
                     labelFormatter={(label) => `Contrato: ${label}`}
                   />
+
                   <Bar
                     dataKey="percentual_executado"
                     fill="#111827"
@@ -608,7 +626,26 @@ export function DashboardClient() {
                     cx="50%"
                     cy="50%"
                     outerRadius={95}
-                    label={(item) => `${item.status}: ${item.total}`}
+                    label={(item) => {
+                      const payload = item as unknown as {
+                        payload?: {
+                          status?: string;
+                          total?: number;
+                        };
+                        name?: string | number;
+                        value?: string | number;
+                      };
+
+                      const status =
+                        payload.payload?.status ||
+                        String(payload.name || "Status");
+
+                      const total = Number(
+                        payload.payload?.total ?? payload.value ?? 0,
+                      );
+
+                      return `${status}: ${formatarNumero(total)}`;
+                    }}
                   >
                     {contratosPorStatus.map((_, index) => (
                       <Cell
@@ -617,12 +654,14 @@ export function DashboardClient() {
                       />
                     ))}
                   </Pie>
+
                   <Tooltip
                     formatter={(value) => [
                       formatarNumero(Number(value)),
                       "Contratos",
                     ]}
                   />
+
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -649,7 +688,26 @@ export function DashboardClient() {
                     cx="50%"
                     cy="50%"
                     outerRadius={95}
-                    label={(item) => `${item.situacao}: ${item.total}`}
+                    label={(item) => {
+                      const payload = item as unknown as {
+                        payload?: {
+                          situacao?: string;
+                          total?: number;
+                        };
+                        name?: string | number;
+                        value?: string | number;
+                      };
+
+                      const situacao =
+                        payload.payload?.situacao ||
+                        String(payload.name || "Situação");
+
+                      const total = Number(
+                        payload.payload?.total ?? payload.value ?? 0,
+                      );
+
+                      return `${situacao}: ${formatarNumero(total)}`;
+                    }}
                   >
                     {medicoesPorSituacao.map((_, index) => (
                       <Cell
@@ -658,12 +716,14 @@ export function DashboardClient() {
                       />
                     ))}
                   </Pie>
+
                   <Tooltip
                     formatter={(value) => [
                       formatarNumero(Number(value)),
                       "Medições",
                     ]}
                   />
+
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
