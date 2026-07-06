@@ -5,7 +5,7 @@ export default function DashboardPage() {
   return (
     <>
       <AppHeader
-        title="Dashboard da Pedra Norte"
+        title="MSM Industrial"
         subtitle="Resumo geral dos contratos, medições e evolução financeira"
         section="Dashboard"
       />
