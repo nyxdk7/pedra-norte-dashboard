@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import {
   ArrowLeft,
-  Banknote,
   Download,
   FileDown,
   FileSpreadsheet,
@@ -35,13 +34,13 @@ import {
   type ContratoDetalheResponse,
   type Medicao,
 } from "@/lib/api";
+import { MetricCard } from "@/components/layout/metric-card";
 import {
   formatarMoeda,
   formatarMoedaCompacta,
   formatarNumero,
   formatarPercentual,
 } from "@/lib/formatters";
-import { MetricCard } from "@/components/layout/metric-card";
 
 type ContratoDetalheClientProps = {
   numeroContrato: string;
@@ -61,11 +60,45 @@ function formatarData(data: string | null) {
   return data;
 }
 
+function statusBadge(status: string) {
+  const texto = status || "Sem status";
+  const normalizado = texto.toLowerCase();
+
+  let classes = "bg-slate-100 text-slate-700";
+
+  if (normalizado.includes("andamento") || normalizado.includes("ativo")) {
+    classes = "bg-emerald-50 text-emerald-700";
+  }
+
+  if (normalizado.includes("encerrado") || normalizado.includes("finalizado")) {
+    classes = "bg-slate-200 text-slate-700";
+  }
+
+  if (normalizado.includes("paralisado") || normalizado.includes("suspenso")) {
+    classes = "bg-amber-50 text-amber-700";
+  }
+
+  if (normalizado.includes("cancelado") || normalizado.includes("rescindido")) {
+    classes = "bg-red-50 text-red-700";
+  }
+
+  return (
+    <span
+      className={[
+        "inline-flex items-center px-2.5 py-1 text-xs font-semibold",
+        classes,
+      ].join(" ")}
+    >
+      {texto}
+    </span>
+  );
+}
+
 function situacaoBadge(situacao: string) {
   const texto = situacao || "Sem situação";
 
   return (
-    <span className="inline-flex border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
+    <span className="inline-flex bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
       {texto}
     </span>
   );
@@ -225,6 +258,7 @@ export function ContratoDetalheClient({
   const podeExportar = Boolean(dados?.permissions.pode_exportar);
 
   const progresso = cards?.percentual_evolucao || 0;
+
   const progressoGrafico = [
     {
       nome: "Executado",
@@ -312,7 +346,7 @@ export function ContratoDetalheClient({
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
                 Status
               </p>
-              <div className="mt-1">{situacaoBadge(contrato.status)}</div>
+              <div className="mt-1">{statusBadge(contrato.status)}</div>
             </div>
 
             <div className="lg:col-span-3">
@@ -362,24 +396,28 @@ export function ContratoDetalheClient({
             description="Valor total do contrato"
             icon={Landmark}
           />
+
           <MetricCard
             label="Valor medido"
             value={formatarMoeda(cards.total_medido)}
             description="Total medido neste contrato"
             icon={FileSpreadsheet}
           />
+
           <MetricCard
             label="Valor pago"
             value={formatarMoeda(cards.total_pago)}
             description="Total pago neste contrato"
             icon={Wallet}
           />
+
           <MetricCard
             label="Faturado"
             value={formatarMoeda(cards.total_faturado)}
             description="Total faturado"
             icon={ReceiptText}
           />
+
           <MetricCard
             label="Evolução"
             value={formatarPercentual(cards.percentual_evolucao)}
@@ -389,7 +427,7 @@ export function ContratoDetalheClient({
         </section>
       )}
 
-      {!carregando && (
+      {!carregando && cards && (
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.8fr_1.2fr]">
           <div className="border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-5 py-4">
@@ -412,13 +450,31 @@ export function ContratoDetalheClient({
                     cy="50%"
                     innerRadius={72}
                     outerRadius={105}
-                    label={(item) =>
-                      `${item.nome}: ${formatarPercentual(item.valor)}`
-                    }
+                    label={(item) => {
+                      const payload = item as unknown as {
+                        payload?: {
+                          nome?: string;
+                          valor?: number;
+                        };
+                        name?: string | number;
+                        value?: string | number;
+                      };
+
+                      const nome =
+                        payload.payload?.nome ||
+                        String(payload.name || "Item");
+
+                      const valor = Number(
+                        payload.payload?.valor ?? payload.value ?? 0,
+                      );
+
+                      return `${nome}: ${formatarPercentual(valor)}`;
+                    }}
                   >
-                    <Cell fill="#0f172a" />
+                    <Cell fill="#111827" />
                     <Cell fill="#cbd5e1" />
                   </Pie>
+
                   <Tooltip
                     formatter={(value) => [
                       formatarPercentual(Number(value)),
@@ -444,25 +500,29 @@ export function ContratoDetalheClient({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={resumoFinanceiro}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
                   <XAxis
                     dataKey="nome"
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                   />
+
                   <YAxis
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                     tickFormatter={(value) => formatarMoedaCompacta(value)}
                   />
+
                   <Tooltip
                     formatter={(value) => [
                       formatarMoeda(Number(value)),
                       "Valor",
                     ]}
                   />
-                  <Bar dataKey="valor" fill="#0f172a" maxBarSize={58} />
+
+                  <Bar dataKey="valor" fill="#111827" maxBarSize={58} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -485,25 +545,29 @@ export function ContratoDetalheClient({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={evolucaoMensal}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
                 <XAxis
                   dataKey="mes_ano"
                   tick={{ fontSize: 12, fill: "#475569" }}
                   axisLine={{ stroke: "#cbd5e1" }}
                   tickLine={{ stroke: "#cbd5e1" }}
                 />
+
                 <YAxis
                   tick={{ fontSize: 12, fill: "#475569" }}
                   axisLine={{ stroke: "#cbd5e1" }}
                   tickLine={{ stroke: "#cbd5e1" }}
                   tickFormatter={(value) => formatarMoedaCompacta(value)}
                 />
+
                 <Tooltip
                   formatter={(value) => [
                     formatarMoeda(Number(value)),
                     "Valor medido",
                   ]}
                 />
-                <Bar dataKey="valor_medido" fill="#0f172a" maxBarSize={48} />
+
+                <Bar dataKey="valor_medido" fill="#111827" maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -535,7 +599,7 @@ export function ContratoDetalheClient({
 
               <button
                 type="submit"
-                className="inline-flex h-10 items-center justify-center gap-2 bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className="inline-flex h-10 items-center justify-center gap-2 bg-[#111827] px-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 <Search size={17} />
                 Filtrar
@@ -602,30 +666,39 @@ export function ContratoDetalheClient({
                       <td className="px-5 py-4 font-bold text-slate-950">
                         {item.numero_medicao || "-"}
                       </td>
+
                       <td className="px-5 py-4 text-slate-700">
                         {item.mes_ano || "-"}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_medido)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_pago)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_liquidado)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_faturado)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_a_processar)}
                       </td>
+
                       <td className="px-5 py-4 text-slate-600">
                         {formatarData(item.data_pagamento)}
                       </td>
+
                       <td className="px-5 py-4 text-slate-600">
                         {formatarData(item.data_faturamento)}
                       </td>
+
                       <td className="px-5 py-4">
                         {situacaoBadge(item.situacao)}
                       </td>
