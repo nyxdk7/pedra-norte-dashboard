@@ -31,7 +31,9 @@ import {
 
 import { MetricCard } from "@/components/layout/metric-card";
 import {
+  buscarContratos,
   buscarDashboard,
+  buscarMedicoes,
   type DashboardRequestFiltros,
   type DashboardResponse,
 } from "@/lib/api";
@@ -43,7 +45,7 @@ import {
 } from "@/lib/formatters";
 
 const CHART_COLORS = [
-  "#0f172a",
+  "#111827",
   "#334155",
   "#475569",
   "#64748b",
@@ -52,6 +54,26 @@ const CHART_COLORS = [
   "#0369a1",
   "#0f766e",
 ];
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+function montarOpcoesUnicas(valores: string[], prefixo = "") {
+  const unicos = Array.from(
+    new Set(
+      valores
+        .map((valor) => String(valor || "").trim())
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+
+  return unicos.map((valor) => ({
+    value: valor,
+    label: prefixo ? `${prefixo} ${valor}` : valor,
+  }));
+}
 
 function DashboardLoadingCards() {
   return (
@@ -116,6 +138,42 @@ export function DashboardClient() {
   const [status, setStatus] = useState("");
   const [situacao, setSituacao] = useState("");
 
+  const [opcoesContrato, setOpcoesContrato] = useState<SelectOption[]>([]);
+  const [opcoesStatus, setOpcoesStatus] = useState<SelectOption[]>([]);
+  const [opcoesSituacao, setOpcoesSituacao] = useState<SelectOption[]>([]);
+
+  async function carregarOpcoesFiltros() {
+    try {
+      const [contratosResposta, medicoesResposta] = await Promise.all([
+        buscarContratos(),
+        buscarMedicoes(),
+      ]);
+
+      setOpcoesContrato(
+        montarOpcoesUnicas(
+          contratosResposta.results.map((item) => item.numero_contrato),
+          "CT",
+        ),
+      );
+
+      setOpcoesStatus(
+        montarOpcoesUnicas(
+          contratosResposta.results.map((item) => item.status),
+        ),
+      );
+
+      setOpcoesSituacao(
+        montarOpcoesUnicas(
+          medicoesResposta.results.map((item) => item.situacao),
+        ),
+      );
+    } catch {
+      setOpcoesContrato([]);
+      setOpcoesStatus([]);
+      setOpcoesSituacao([]);
+    }
+  }
+
   async function carregarDashboard(filtros: DashboardRequestFiltros = {}) {
     try {
       setCarregando(true);
@@ -138,6 +196,7 @@ export function DashboardClient() {
   }
 
   useEffect(() => {
+    carregarOpcoesFiltros();
     carregarDashboard();
   }, []);
 
@@ -145,9 +204,9 @@ export function DashboardClient() {
     event.preventDefault();
 
     carregarDashboard({
-      contrato: contrato.trim(),
-      status: status.trim(),
-      situacao: situacao.trim(),
+      contrato,
+      status,
+      situacao,
     });
   }
 
@@ -184,13 +243,21 @@ export function DashboardClient() {
             >
               Contrato
             </label>
-            <input
+
+            <select
               id="contrato"
               value={contrato}
               onChange={(event) => setContrato(event.target.value)}
-              placeholder="Ex: 001/2024"
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            />
+            >
+              <option value="">Todos os contratos</option>
+
+              {opcoesContrato.map((opcao) => (
+                <option key={opcao.value} value={opcao.value}>
+                  {opcao.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -200,13 +267,21 @@ export function DashboardClient() {
             >
               Status
             </label>
-            <input
+
+            <select
               id="status"
               value={status}
               onChange={(event) => setStatus(event.target.value)}
-              placeholder="Ex: Ativo"
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            />
+            >
+              <option value="">Todos os status</option>
+
+              {opcoesStatus.map((opcao) => (
+                <option key={opcao.value} value={opcao.value}>
+                  {opcao.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -216,19 +291,27 @@ export function DashboardClient() {
             >
               Situação
             </label>
-            <input
+
+            <select
               id="situacao"
               value={situacao}
               onChange={(event) => setSituacao(event.target.value)}
-              placeholder="Ex: Pago"
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            />
+            >
+              <option value="">Todas as situações</option>
+
+              {opcoesSituacao.map((opcao) => (
+                <option key={opcao.value} value={opcao.value}>
+                  {opcao.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-end">
             <button
               type="submit"
-              className="flex h-11 w-full items-center justify-center gap-2 bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:w-auto"
+              className="flex h-11 w-full items-center justify-center gap-2 bg-[#111827] px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:w-auto"
             >
               <Search size={17} />
               Filtrar
@@ -356,9 +439,9 @@ export function DashboardClient() {
                   <Line
                     type="monotone"
                     dataKey="valor_medido"
-                    stroke="#0f172a"
+                    stroke="#111827"
                     strokeWidth={3}
-                    dot={{ r: 4, fill: "#0f172a", strokeWidth: 0 }}
+                    dot={{ r: 4, fill: "#111827", strokeWidth: 0 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
@@ -400,7 +483,7 @@ export function DashboardClient() {
                   />
                   <Bar
                     dataKey="valor"
-                    fill="#0f172a"
+                    fill="#111827"
                     radius={[0, 0, 0, 0]}
                     maxBarSize={58}
                   />
@@ -450,7 +533,7 @@ export function DashboardClient() {
                   <Bar
                     dataKey="valor_contratado"
                     name="Contratado"
-                    fill="#0f172a"
+                    fill="#111827"
                     maxBarSize={42}
                   />
                   <Bar
@@ -511,7 +594,7 @@ export function DashboardClient() {
                   />
                   <Bar
                     dataKey="percentual_executado"
-                    fill="#0f172a"
+                    fill="#111827"
                     maxBarSize={26}
                   />
                 </BarChart>
@@ -622,9 +705,9 @@ export function DashboardClient() {
             type="button"
             onClick={() =>
               carregarDashboard({
-                contrato: contrato.trim(),
-                status: status.trim(),
-                situacao: situacao.trim(),
+                contrato,
+                status,
+                situacao,
               })
             }
             className="flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"

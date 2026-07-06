@@ -268,6 +268,18 @@ export type MedicoesRequestFiltros = {
   situacao?: string;
 };
 
+export type ContratoDetalheResponse = {
+  contrato: Contrato;
+  cards: DashboardCards;
+  graficos: DashboardGraficos;
+  medicoes: Medicao[];
+  permissions: UsuarioPermissoes;
+};
+
+export type ContratoDetalheFiltros = {
+  situacao?: string;
+};
+
 export async function loginUsuario(username: string, password: string) {
   return apiRequest<LoginResponse>("/auth/login/", {
     method: "POST",
@@ -307,6 +319,19 @@ export async function buscarContratos(filtros: ContratosRequestFiltros = {}) {
   return apiRequest<ContratosResponse>(`/contratos/${queryString}`);
 }
 
+export async function buscarContratoDetalhe(
+  numeroContrato: string,
+  filtros: ContratoDetalheFiltros = {},
+) {
+  const queryString = montarQueryString({
+    situacao: filtros.situacao,
+  });
+
+  return apiRequest<ContratoDetalheResponse>(
+    `/contratos/${encodeURIComponent(numeroContrato)}/${queryString}`,
+  );
+}
+
 export async function buscarMedicoes(filtros: MedicoesRequestFiltros = {}) {
   const queryString = montarQueryString({
     contrato: filtros.contrato,
@@ -341,5 +366,16 @@ export async function exportarMedicoesExcel(
   return baixarArquivo(
     `/exportar/medicoes/excel/${queryString}`,
     "medicoes_pedra_norte.xlsx",
+  );
+}
+
+export async function baixarContratoPdf(numeroContrato: string) {
+  const nomeArquivo = `contrato_${numeroContrato
+    .replaceAll("/", "-")
+    .replaceAll("\\", "-")}_pedra_norte.pdf`;
+
+  return baixarArquivo(
+    `/contratos/${encodeURIComponent(numeroContrato)}/pdf/`,
+    nomeArquivo,
   );
 }

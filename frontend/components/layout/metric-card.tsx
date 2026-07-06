@@ -14,23 +14,30 @@ export function MetricCard({
   icon: Icon,
 }: MetricCardProps) {
   return (
-    <article className="border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+    <article className="min-w-0 border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex min-w-0 items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
             {label}
           </p>
-          <p className="mt-4 text-3xl font-bold tracking-[-0.04em] text-slate-950">
+
+          <p
+            title={value}
+            className="mt-4 max-w-full break-words text-2xl font-bold leading-tight tracking-[-0.04em] text-slate-950 xl:text-[26px]"
+          >
             {value}
           </p>
+
           <p className="mt-3 text-sm leading-5 text-slate-500">
             {description}
           </p>
         </div>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-slate-950 text-white">
-          <Icon size={22} strokeWidth={2} />
-        </div>
+        <Icon
+          size={25}
+          strokeWidth={2}
+          className="mt-1 shrink-0 text-[#111827]"
+        />
       </div>
     </article>
   );

@@ -7,23 +7,21 @@ type BrandProps = {
 
 export function Brand({ compact = false, dark = false }: BrandProps) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex min-w-0 items-center gap-3">
       <div
         className={[
-          "flex h-11 w-11 items-center justify-center border text-sm font-bold shadow-sm",
-          dark
-            ? "border-slate-700 bg-slate-950 text-white"
-            : "border-slate-300 bg-white text-slate-950",
+          "flex h-11 w-11 shrink-0 items-center justify-center",
+          dark ? "text-white" : "text-[#111827]",
         ].join(" ")}
       >
-        <BarChart3 size={22} strokeWidth={2} />
+        <BarChart3 size={25} strokeWidth={2} />
       </div>
 
       {!compact && (
-        <div>
+        <div className="min-w-0">
           <h1
             className={[
-              "text-base font-bold leading-tight",
+              "truncate text-base font-bold leading-tight",
               dark ? "text-white" : "text-slate-950",
             ].join(" ")}
           >
@@ -31,7 +29,7 @@ export function Brand({ compact = false, dark = false }: BrandProps) {
           </h1>
           <p
             className={[
-              "text-sm leading-tight",
+              "truncate text-sm leading-tight",
               dark ? "text-slate-400" : "text-slate-500",
             ].join(" ")}
           >

@@ -1,9 +1,9 @@
-import { AppHeader } from "@/components/layout/app-header";
 import { ContratoDetalheClient } from "@/components/contratos/contrato-detalhe-client";
+import { AppHeader } from "@/components/layout/app-header";
 
 type ContratoDetalhePageProps = {
   params: Promise<{
-    numeroContrato: string;
+    numeroContrato: string[];
   }>;
 };
 
@@ -11,7 +11,10 @@ export default async function ContratoDetalhePage({
   params,
 }: ContratoDetalhePageProps) {
   const { numeroContrato } = await params;
-  const numeroContratoDecodificado = decodeURIComponent(numeroContrato);
+
+  const numeroContratoDecodificado = decodeURIComponent(
+    numeroContrato.join("/"),
+  );
 
   return (
     <>

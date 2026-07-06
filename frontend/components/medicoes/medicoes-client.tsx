@@ -23,6 +23,7 @@ import {
 
 import { MetricCard } from "@/components/layout/metric-card";
 import {
+  buscarContratos,
   buscarMedicoes,
   exportarMedicoesExcel,
   type Medicao,
@@ -34,6 +35,26 @@ import {
   formatarMoedaCompacta,
   formatarNumero,
 } from "@/lib/formatters";
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+function montarOpcoesUnicas(valores: string[], prefixo = "") {
+  const unicos = Array.from(
+    new Set(
+      valores
+        .map((valor) => String(valor || "").trim())
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+
+  return unicos.map((valor) => ({
+    value: valor,
+    label: prefixo ? `${prefixo} ${valor}` : valor,
+  }));
+}
 
 function formatarData(data: string | null) {
   if (!data) {
@@ -53,7 +74,7 @@ function situacaoBadge(situacao: string) {
   const texto = situacao || "Sem situação";
 
   return (
-    <span className="inline-flex border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
+    <span className="inline-flex bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
       {texto}
     </span>
   );
@@ -130,6 +151,34 @@ export function MedicoesClient() {
   const [contrato, setContrato] = useState("");
   const [situacao, setSituacao] = useState("");
 
+  const [opcoesContrato, setOpcoesContrato] = useState<SelectOption[]>([]);
+  const [opcoesSituacao, setOpcoesSituacao] = useState<SelectOption[]>([]);
+
+  async function carregarOpcoesFiltros() {
+    try {
+      const [contratosResposta, medicoesResposta] = await Promise.all([
+        buscarContratos(),
+        buscarMedicoes(),
+      ]);
+
+      setOpcoesContrato(
+        montarOpcoesUnicas(
+          contratosResposta.results.map((item) => item.numero_contrato),
+          "CT",
+        ),
+      );
+
+      setOpcoesSituacao(
+        montarOpcoesUnicas(
+          medicoesResposta.results.map((item) => item.situacao),
+        ),
+      );
+    } catch {
+      setOpcoesContrato([]);
+      setOpcoesSituacao([]);
+    }
+  }
+
   async function carregarMedicoes(filtros: MedicoesRequestFiltros = {}) {
     try {
       setCarregando(true);
@@ -152,6 +201,7 @@ export function MedicoesClient() {
   }
 
   useEffect(() => {
+    carregarOpcoesFiltros();
     carregarMedicoes();
   }, []);
 
@@ -159,8 +209,8 @@ export function MedicoesClient() {
     event.preventDefault();
 
     carregarMedicoes({
-      contrato: contrato.trim(),
-      situacao: situacao.trim(),
+      contrato,
+      situacao,
     });
   }
 
@@ -177,8 +227,8 @@ export function MedicoesClient() {
       setErro("");
 
       await exportarMedicoesExcel({
-        contrato: contrato.trim(),
-        situacao: situacao.trim(),
+        contrato,
+        situacao,
       });
     } catch (error) {
       const mensagem =
@@ -211,13 +261,21 @@ export function MedicoesClient() {
             >
               Contrato
             </label>
-            <input
+
+            <select
               id="contrato"
               value={contrato}
               onChange={(event) => setContrato(event.target.value)}
-              placeholder="Ex: 001/2024"
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            />
+            >
+              <option value="">Todos os contratos</option>
+
+              {opcoesContrato.map((opcao) => (
+                <option key={opcao.value} value={opcao.value}>
+                  {opcao.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -227,19 +285,27 @@ export function MedicoesClient() {
             >
               Situação
             </label>
-            <input
+
+            <select
               id="situacao"
               value={situacao}
               onChange={(event) => setSituacao(event.target.value)}
-              placeholder="Ex: Pago"
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            />
+            >
+              <option value="">Todas as situações</option>
+
+              {opcoesSituacao.map((opcao) => (
+                <option key={opcao.value} value={opcao.value}>
+                  {opcao.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-end">
             <button
               type="submit"
-              className="flex h-11 w-full items-center justify-center gap-2 bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:w-auto"
+              className="flex h-11 w-full items-center justify-center gap-2 bg-[#111827] px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:w-auto"
             >
               <Search size={17} />
               Filtrar
@@ -286,30 +352,35 @@ export function MedicoesClient() {
             description="Registros encontrados"
             icon={FileSpreadsheet}
           />
+
           <MetricCard
             label="Medido"
             value={formatarMoeda(cards.total_medido)}
             description="Total medido"
             icon={Landmark}
           />
+
           <MetricCard
             label="Pago"
             value={formatarMoeda(cards.total_pago)}
             description="Total pago"
             icon={Wallet}
           />
+
           <MetricCard
             label="Liquidado"
             value={formatarMoeda(cards.total_liquidado)}
             description="Total liquidado"
             icon={Banknote}
           />
+
           <MetricCard
             label="Faturado"
             value={formatarMoeda(cards.total_faturado)}
             description="Total faturado"
             icon={ReceiptText}
           />
+
           <MetricCard
             label="A processar"
             value={formatarMoeda(cards.total_a_processar)}
@@ -357,9 +428,9 @@ export function MedicoesClient() {
                   <Line
                     type="monotone"
                     dataKey="valor_medido"
-                    stroke="#0f172a"
+                    stroke="#111827"
                     strokeWidth={3}
-                    dot={{ r: 4, fill: "#0f172a", strokeWidth: 0 }}
+                    dot={{ r: 4, fill: "#111827", strokeWidth: 0 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
@@ -389,8 +460,8 @@ export function MedicoesClient() {
               type="button"
               onClick={() =>
                 carregarMedicoes({
-                  contrato: contrato.trim(),
-                  situacao: situacao.trim(),
+                  contrato,
+                  situacao,
                 })
               }
               className="flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -443,33 +514,43 @@ export function MedicoesClient() {
                       <td className="px-5 py-4 font-bold text-slate-950">
                         {item.numero_medicao || "-"}
                       </td>
+
                       <td className="px-5 py-4 text-slate-700">
                         {item.numero_contrato || "-"}
                       </td>
+
                       <td className="px-5 py-4 text-slate-700">
                         {item.mes_ano || "-"}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_medido)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_pago)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_liquidado)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_faturado)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_a_processar)}
                       </td>
+
                       <td className="px-5 py-4 text-slate-600">
                         {formatarData(item.data_pagamento)}
                       </td>
+
                       <td className="px-5 py-4 text-slate-600">
                         {formatarData(item.data_faturamento)}
                       </td>
+
                       <td className="px-5 py-4">
                         {situacaoBadge(item.situacao)}
                       </td>

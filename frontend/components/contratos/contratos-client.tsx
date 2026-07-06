@@ -26,6 +26,26 @@ import {
   formatarPercentual,
 } from "@/lib/formatters";
 
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+function montarOpcoesUnicas(valores: string[], prefixo = "") {
+  const unicos = Array.from(
+    new Set(
+      valores
+        .map((valor) => String(valor || "").trim())
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+
+  return unicos.map((valor) => ({
+    value: valor,
+    label: prefixo ? `${prefixo} ${valor}` : valor,
+  }));
+}
+
 function formatarData(data: string | null) {
   if (!data) {
     return "-";
@@ -41,11 +61,35 @@ function formatarData(data: string | null) {
 }
 
 function statusBadge(status: string) {
-  const statusNormalizado = status || "Sem status";
+  const texto = status || "Sem status";
+  const normalizado = texto.toLowerCase();
+
+  let classes = "bg-slate-100 text-slate-700";
+
+  if (normalizado.includes("andamento") || normalizado.includes("ativo")) {
+    classes = "bg-emerald-50 text-emerald-700";
+  }
+
+  if (normalizado.includes("encerrado") || normalizado.includes("finalizado")) {
+    classes = "bg-slate-200 text-slate-700";
+  }
+
+  if (normalizado.includes("paralisado") || normalizado.includes("suspenso")) {
+    classes = "bg-amber-50 text-amber-700";
+  }
+
+  if (normalizado.includes("cancelado") || normalizado.includes("rescindido")) {
+    classes = "bg-red-50 text-red-700";
+  }
 
   return (
-    <span className="inline-flex border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
-      {statusNormalizado}
+    <span
+      className={[
+        "inline-flex items-center px-2.5 py-1 text-xs font-semibold",
+        classes,
+      ].join(" ")}
+    >
+      {texto}
     </span>
   );
 }
@@ -122,6 +166,29 @@ export function ContratosClient() {
   const [contrato, setContrato] = useState("");
   const [status, setStatus] = useState("");
 
+  const [opcoesContrato, setOpcoesContrato] = useState<SelectOption[]>([]);
+  const [opcoesStatus, setOpcoesStatus] = useState<SelectOption[]>([]);
+
+  async function carregarOpcoesFiltros() {
+    try {
+      const resposta = await buscarContratos();
+
+      setOpcoesContrato(
+        montarOpcoesUnicas(
+          resposta.results.map((item) => item.numero_contrato),
+          "CT",
+        ),
+      );
+
+      setOpcoesStatus(
+        montarOpcoesUnicas(resposta.results.map((item) => item.status)),
+      );
+    } catch {
+      setOpcoesContrato([]);
+      setOpcoesStatus([]);
+    }
+  }
+
   async function carregarContratos(filtros: ContratosRequestFiltros = {}) {
     try {
       setCarregando(true);
@@ -144,6 +211,7 @@ export function ContratosClient() {
   }
 
   useEffect(() => {
+    carregarOpcoesFiltros();
     carregarContratos();
   }, []);
 
@@ -151,8 +219,8 @@ export function ContratosClient() {
     event.preventDefault();
 
     carregarContratos({
-      contrato: contrato.trim(),
-      status: status.trim(),
+      contrato,
+      status,
     });
   }
 
@@ -169,8 +237,8 @@ export function ContratosClient() {
       setErro("");
 
       await exportarContratosExcel({
-        contrato: contrato.trim(),
-        status: status.trim(),
+        contrato,
+        status,
       });
     } catch (error) {
       const mensagem =
@@ -202,13 +270,21 @@ export function ContratosClient() {
             >
               Contrato
             </label>
-            <input
+
+            <select
               id="contrato"
               value={contrato}
               onChange={(event) => setContrato(event.target.value)}
-              placeholder="Ex: 001/2024"
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            />
+            >
+              <option value="">Todos os contratos</option>
+
+              {opcoesContrato.map((opcao) => (
+                <option key={opcao.value} value={opcao.value}>
+                  {opcao.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -218,19 +294,27 @@ export function ContratosClient() {
             >
               Status
             </label>
-            <input
+
+            <select
               id="status"
               value={status}
               onChange={(event) => setStatus(event.target.value)}
-              placeholder="Ex: Ativo"
               className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            />
+            >
+              <option value="">Todos os status</option>
+
+              {opcoesStatus.map((opcao) => (
+                <option key={opcao.value} value={opcao.value}>
+                  {opcao.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-end">
             <button
               type="submit"
-              className="flex h-11 w-full items-center justify-center gap-2 bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:w-auto"
+              className="flex h-11 w-full items-center justify-center gap-2 bg-[#111827] px-4 text-sm font-semibold text-white transition hover:bg-slate-800 md:w-auto"
             >
               <Search size={17} />
               Filtrar
@@ -277,24 +361,28 @@ export function ContratosClient() {
             description="Total encontrado nos filtros atuais"
             icon={ClipboardList}
           />
+
           <MetricCard
             label="Contratado"
             value={formatarMoeda(cards.total_contratado)}
             description="Soma dos contratos listados"
             icon={Landmark}
           />
+
           <MetricCard
             label="Medido"
             value={formatarMoeda(cards.total_medido)}
             description="Valor medido nos contratos"
             icon={Landmark}
           />
+
           <MetricCard
             label="Saldo"
             value={formatarMoeda(cards.saldo_estimado)}
             description="Diferença entre contratado e medido"
             icon={Landmark}
           />
+
           <MetricCard
             label="Evolução"
             value={formatarPercentual(cards.percentual_evolucao)}
@@ -320,8 +408,8 @@ export function ContratosClient() {
               type="button"
               onClick={() =>
                 carregarContratos({
-                  contrato: contrato.trim(),
-                  status: status.trim(),
+                  contrato,
+                  status,
                 })
               }
               className="flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -372,25 +460,33 @@ export function ContratosClient() {
                       <td className="px-5 py-4 font-bold text-slate-950">
                         {item.numero_contrato || "-"}
                       </td>
+
                       <td className="px-5 py-4 text-slate-700">
                         {item.empresa || "-"}
                       </td>
+
                       <td className="max-w-[360px] px-5 py-4 text-slate-600">
                         <p className="line-clamp-3">{item.objeto || "-"}</p>
                       </td>
+
                       <td className="px-5 py-4">{statusBadge(item.status)}</td>
+
                       <td className="px-5 py-4 text-slate-600">
                         {formatarData(item.data_inicio)}
                       </td>
+
                       <td className="px-5 py-4 text-slate-600">
                         {formatarData(item.data_fim)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarMoeda(item.valor_total)}
                       </td>
+
                       <td className="px-5 py-4 font-semibold text-slate-950">
                         {formatarPercentual(item.percentual_executado)}
                       </td>
+
                       <td className="px-5 py-4">
                         <Link
                           href={`/contratos/${encodeURIComponent(

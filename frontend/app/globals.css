@@ -6,8 +6,8 @@
   --card: #ffffff;
   --muted: #667085;
   --border: #d9dee7;
-  --primary: #1f3a5f;
-  --primary-hover: #172d4a;
+  --primary: #111827;
+  --primary-hover: #1f2937;
   --accent: #2563eb;
   --success: #157347;
   --warning: #b7791f;
@@ -44,5 +44,5 @@ a {
 }
 
 ::selection {
-  background: rgba(31, 58, 95, 0.18);
+  background: rgba(17, 24, 39, 0.18);
 }
