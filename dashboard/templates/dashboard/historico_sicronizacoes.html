@@ -1,0 +1,80 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Histórico de Sincronizações - Pedra Norte{% endblock %}
+
+{% block page_header %}
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1 class="h3 mb-1">Histórico de sincronizações</h1>
+            <p class="mb-0">Registro das sincronizações manuais e automáticas da planilha</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+    <div class="card-info">
+        <div class="section-title">Últimas sincronizações</div>
+
+        <div class="small-muted">
+            Exibindo os 100 registros mais recentes.
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="table table-bordered table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Data/hora</th>
+                    <th>Status</th>
+                    <th>Origem</th>
+                    <th>Usuário</th>
+                    <th>Contratos</th>
+                    <th>Medições</th>
+                    <th>Mensagem</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for historico in historicos %}
+                    <tr>
+                        <td>
+                            {{ historico.data_hora|date:"d/m/Y" }}
+                            às
+                            {{ historico.data_hora|date:"H:i:s" }}
+                        </td>
+
+                        <td>
+                            {% if historico.status == "sucesso" %}
+                                <span class="badge bg-success">Sucesso</span>
+                            {% else %}
+                                <span class="badge bg-danger">Erro</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ historico.get_origem_display }}</td>
+
+                        <td>
+                            {% if historico.usuario %}
+                                {{ historico.usuario.username }}
+                            {% else %}
+                                Servidor
+                            {% endif %}
+                        </td>
+
+                        <td>{{ historico.total_contratos }}</td>
+                        <td>{{ historico.total_medicoes }}</td>
+                        <td class="text-limit">{{ historico.mensagem }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">
+                            Nenhuma sincronização registrada ainda.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}
