@@ -1,7 +1,7 @@
 from django.db.utils import OperationalError, ProgrammingError
 
 from dashboard.models import Contrato, Medicao
-from dashboard.permissoes import (
+from backend.dashboard.permissions import (
     pode_exportar,
     pode_sincronizar,
     pode_ver_historico,
