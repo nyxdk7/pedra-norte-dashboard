@@ -33,7 +33,7 @@ urlpatterns = [
         name="api_historico_sincronizacoes",
     ),
 
-    path("sincronizar/", views.sincronizar_geral_api, name="api_sincronizar"),
+    path("sincronizar/", views.sincronizar_api, name="api_sincronizar"),
 
     path(
         "exportar/contratos/excel/",
