@@ -1,8 +1,93 @@
-import { ArrowRight, Eye, Lock, ShieldCheck, User } from "lucide-react";
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck, User } from "lucide-react";
 
 import { Brand } from "@/components/brand";
+import { buscarUsuarioLogado, loginUsuario } from "@/lib/api";
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [lembrarUsuario, setLembrarUsuario] = useState(true);
+  const [carregando, setCarregando] = useState(false);
+  const [verificandoSessao, setVerificandoSessao] = useState(true);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    const usuarioSalvo = localStorage.getItem("pedra_norte_username");
+
+    if (usuarioSalvo) {
+      setUsername(usuarioSalvo);
+    }
+
+    async function verificarSessao() {
+      try {
+        await buscarUsuarioLogado();
+        router.replace("/dashboard");
+      } catch {
+        setVerificandoSessao(false);
+      }
+    }
+
+    verificarSessao();
+  }, [router]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setErro("");
+
+    if (!username.trim() || !password.trim()) {
+      setErro("Informe usuário e senha para entrar.");
+      return;
+    }
+
+    try {
+      setCarregando(true);
+
+      await loginUsuario(username.trim(), password);
+
+      if (lembrarUsuario) {
+        localStorage.setItem("pedra_norte_username", username.trim());
+      } else {
+        localStorage.removeItem("pedra_norte_username");
+      }
+
+      router.replace("/dashboard");
+    } catch (error) {
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível realizar o login.";
+
+      setErro(mensagem);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  if (verificandoSessao) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+        <div className="border border-slate-200 bg-white px-8 py-7 shadow-sm">
+          <div className="mb-5 flex justify-center">
+            <Brand />
+          </div>
+
+          <div className="flex items-center justify-center gap-3 text-sm font-semibold text-slate-600">
+            <span className="h-4 w-4 animate-spin border-2 border-slate-300 border-t-slate-900" />
+            Verificando sessão...
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8">
       <section className="w-full max-w-[520px]">
@@ -20,7 +105,13 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form className="space-y-5 px-7 py-6">
+          <form onSubmit={handleSubmit} className="space-y-5 px-7 py-6">
+            {erro && (
+              <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {erro}
+              </div>
+            )}
+
             <div>
               <label
                 htmlFor="username"
@@ -37,6 +128,8 @@ export default function LoginPage() {
                   type="text"
                   autoComplete="username"
                   placeholder="Ex: admin"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
                   className="h-full w-full border-0 bg-transparent text-sm text-slate-950 outline-none placeholder:text-slate-400"
                 />
               </div>
@@ -55,17 +148,21 @@ export default function LoginPage() {
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={mostrarSenha ? "text" : "password"}
                   autoComplete="current-password"
                   placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   className="h-full w-full border-0 bg-transparent text-sm text-slate-950 outline-none placeholder:text-slate-400"
                 />
+
                 <button
                   type="button"
+                  onClick={() => setMostrarSenha((valorAtual) => !valorAtual)}
                   className="ml-3 text-slate-400 transition hover:text-slate-700"
-                  aria-label="Mostrar senha"
+                  aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                 >
-                  <Eye size={19} />
+                  {mostrarSenha ? <EyeOff size={19} /> : <Eye size={19} />}
                 </button>
               </div>
             </div>
@@ -74,7 +171,8 @@ export default function LoginPage() {
               <label className="flex cursor-pointer items-center gap-2 text-slate-700">
                 <input
                   type="checkbox"
-                  defaultChecked
+                  checked={lembrarUsuario}
+                  onChange={(event) => setLembrarUsuario(event.target.checked)}
                   className="h-4 w-4 accent-slate-900"
                 />
                 Lembrar usuário
@@ -88,10 +186,11 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="flex h-12 w-full items-center justify-center gap-2 bg-slate-700 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+              disabled={carregando}
+              className="flex h-12 w-full items-center justify-center gap-2 bg-slate-700 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
-              Entrar
-              <ArrowRight size={18} />
+              {carregando ? "Entrando..." : "Entrar"}
+              {!carregando && <ArrowRight size={18} />}
             </button>
           </form>
         </div>
