@@ -17,8 +17,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Legend,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -37,6 +41,17 @@ import {
   formatarNumero,
   formatarPercentual,
 } from "@/lib/formatters";
+
+const CHART_COLORS = [
+  "#0f172a",
+  "#334155",
+  "#475569",
+  "#64748b",
+  "#1e3a8a",
+  "#1d4ed8",
+  "#0369a1",
+  "#0f766e",
+];
 
 function DashboardLoadingCards() {
   return (
@@ -69,6 +84,25 @@ function ChartLoadingState() {
     <div className="flex h-72 items-center justify-center px-5 py-6 text-sm font-semibold text-slate-500">
       <span className="mr-3 h-4 w-4 animate-spin border-2 border-slate-300 border-t-slate-900" />
       Carregando gráfico...
+    </div>
+  );
+}
+
+type ChartCardProps = {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+};
+
+function ChartCard({ title, subtitle, children }: ChartCardProps) {
+  return (
+    <div className="border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 px-5 py-4">
+        <h2 className="text-base font-bold text-slate-950">{title}</h2>
+        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+      </div>
+
+      {children}
     </div>
   );
 }
@@ -126,8 +160,15 @@ export function DashboardClient() {
   }
 
   const cards = dashboard?.cards;
+
   const evolucaoMensal = dashboard?.graficos.evolucao_mensal || [];
   const resumoFinanceiro = dashboard?.graficos.resumo_financeiro || [];
+  const contratadoMedido = dashboard?.graficos.contratado_x_medido || [];
+  const rankingEvolucao = dashboard?.graficos.ranking_evolucao || [];
+  const contratosPorStatus = dashboard?.graficos.contratos_por_status || [];
+  const medicoesPorSituacao = dashboard?.graficos.medicoes_por_situacao || [];
+
+  const rankingLimitado = rankingEvolucao.slice(0, 8);
 
   return (
     <div className="space-y-6 px-5 py-6 lg:px-8">
@@ -282,16 +323,10 @@ export function DashboardClient() {
       )}
 
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <div className="border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-5 py-4">
-            <h2 className="text-base font-bold text-slate-950">
-              Evolução mensal
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Valor medido agrupado por mês.
-            </p>
-          </div>
-
+        <ChartCard
+          title="Evolução mensal"
+          subtitle="Valor medido agrupado por mês."
+        >
           {carregando ? (
             <ChartLoadingState />
           ) : evolucaoMensal.length ? (
@@ -332,18 +367,12 @@ export function DashboardClient() {
           ) : (
             <ChartEmptyState />
           )}
-        </div>
+        </ChartCard>
 
-        <div className="border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-5 py-4">
-            <h2 className="text-base font-bold text-slate-950">
-              Resumo financeiro
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Comparativo entre contratado, medido, pago, faturado e a processar.
-            </p>
-          </div>
-
+        <ChartCard
+          title="Resumo financeiro"
+          subtitle="Comparativo entre contratado, medido, pago, faturado e a processar."
+        >
           {carregando ? (
             <ChartLoadingState />
           ) : resumoFinanceiro.length ? (
@@ -381,7 +410,201 @@ export function DashboardClient() {
           ) : (
             <ChartEmptyState />
           )}
-        </div>
+        </ChartCard>
+      </section>
+
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <ChartCard
+          title="Contratado x medido por contrato"
+          subtitle="Comparativo financeiro entre valor contratado e valor medido."
+        >
+          {carregando ? (
+            <ChartLoadingState />
+          ) : contratadoMedido.length ? (
+            <div className="h-80 px-4 py-5">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={contratadoMedido}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis
+                    dataKey="numero_contrato"
+                    tick={{ fontSize: 12, fill: "#475569" }}
+                    axisLine={{ stroke: "#cbd5e1" }}
+                    tickLine={{ stroke: "#cbd5e1" }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "#475569" }}
+                    axisLine={{ stroke: "#cbd5e1" }}
+                    tickLine={{ stroke: "#cbd5e1" }}
+                    tickFormatter={(value) => formatarMoedaCompacta(value)}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      formatarMoeda(Number(value)),
+                      name === "valor_contratado"
+                        ? "Valor contratado"
+                        : "Valor medido",
+                    ]}
+                    labelFormatter={(label) => `Contrato: ${label}`}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="valor_contratado"
+                    name="Contratado"
+                    fill="#0f172a"
+                    maxBarSize={42}
+                  />
+                  <Bar
+                    dataKey="valor_medido"
+                    name="Medido"
+                    fill="#475569"
+                    maxBarSize={42}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <ChartEmptyState />
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Ranking de evolução"
+          subtitle="Contratos com maior percentual financeiro executado."
+        >
+          {carregando ? (
+            <ChartLoadingState />
+          ) : rankingLimitado.length ? (
+            <div className="h-80 px-4 py-5">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={rankingLimitado}
+                  layout="vertical"
+                  margin={{
+                    top: 5,
+                    right: 25,
+                    left: 25,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 12, fill: "#475569" }}
+                    axisLine={{ stroke: "#cbd5e1" }}
+                    tickLine={{ stroke: "#cbd5e1" }}
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="numero_contrato"
+                    width={95}
+                    tick={{ fontSize: 12, fill: "#475569" }}
+                    axisLine={{ stroke: "#cbd5e1" }}
+                    tickLine={{ stroke: "#cbd5e1" }}
+                  />
+                  <Tooltip
+                    formatter={(value) => [
+                      formatarPercentual(Number(value)),
+                      "Execução",
+                    ]}
+                    labelFormatter={(label) => `Contrato: ${label}`}
+                  />
+                  <Bar
+                    dataKey="percentual_executado"
+                    fill="#0f172a"
+                    maxBarSize={26}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <ChartEmptyState />
+          )}
+        </ChartCard>
+      </section>
+
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <ChartCard
+          title="Contratos por status"
+          subtitle="Distribuição dos contratos conforme o status cadastrado."
+        >
+          {carregando ? (
+            <ChartLoadingState />
+          ) : contratosPorStatus.length ? (
+            <div className="h-80 px-4 py-5">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={contratosPorStatus}
+                    dataKey="total"
+                    nameKey="status"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={95}
+                    label={(item) => `${item.status}: ${item.total}`}
+                  >
+                    {contratosPorStatus.map((_, index) => (
+                      <Cell
+                        key={`status-${index}`}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [
+                      formatarNumero(Number(value)),
+                      "Contratos",
+                    ]}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <ChartEmptyState />
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Medições por situação"
+          subtitle="Distribuição das medições conforme a situação atual."
+        >
+          {carregando ? (
+            <ChartLoadingState />
+          ) : medicoesPorSituacao.length ? (
+            <div className="h-80 px-4 py-5">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={medicoesPorSituacao}
+                    dataKey="total"
+                    nameKey="situacao"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={95}
+                    label={(item) => `${item.situacao}: ${item.total}`}
+                  >
+                    {medicoesPorSituacao.map((_, index) => (
+                      <Cell
+                        key={`situacao-${index}`}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [
+                      formatarNumero(Number(value)),
+                      "Medições",
+                    ]}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <ChartEmptyState />
+          )}
+        </ChartCard>
       </section>
 
       <section className="border border-slate-200 bg-white shadow-sm">
