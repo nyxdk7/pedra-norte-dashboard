@@ -450,9 +450,26 @@ export function ContratoDetalheClient({
                     cy="50%"
                     innerRadius={72}
                     outerRadius={105}
-                    label={(item) =>
-                      `${item.nome}: ${formatarPercentual(item.valor)}`
-                    }
+                    label={(item) => {
+                      const payload = item as unknown as {
+                        payload?: {
+                          nome?: string;
+                          valor?: number;
+                        };
+                        name?: string | number;
+                        value?: string | number;
+                      };
+
+                      const nome =
+                        payload.payload?.nome ||
+                        String(payload.name || "Item");
+
+                      const valor = Number(
+                        payload.payload?.valor ?? payload.value ?? 0,
+                      );
+
+                      return `${nome}: ${formatarPercentual(valor)}`;
+                    }}
                   >
                     <Cell fill="#111827" />
                     <Cell fill="#cbd5e1" />
@@ -483,12 +500,14 @@ export function ContratoDetalheClient({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={resumoFinanceiro}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
                   <XAxis
                     dataKey="nome"
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
                     tickLine={{ stroke: "#cbd5e1" }}
                   />
+
                   <YAxis
                     tick={{ fontSize: 12, fill: "#475569" }}
                     axisLine={{ stroke: "#cbd5e1" }}
@@ -526,6 +545,7 @@ export function ContratoDetalheClient({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={evolucaoMensal}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+
                 <XAxis
                   dataKey="mes_ano"
                   tick={{ fontSize: 12, fill: "#475569" }}
