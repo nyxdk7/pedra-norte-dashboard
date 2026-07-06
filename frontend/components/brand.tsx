@@ -25,15 +25,16 @@ export function Brand({ compact = false, dark = false }: BrandProps) {
               dark ? "text-white" : "text-slate-950",
             ].join(" ")}
           >
-            Pedra Norte
+            MSM Industrial
           </h1>
+
           <p
             className={[
               "truncate text-sm leading-tight",
               dark ? "text-slate-400" : "text-slate-500",
             ].join(" ")}
           >
-            Dashboard de obras
+            Sistema de medições
           </p>
         </div>
       )}

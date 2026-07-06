@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Pedra Norte Dashboard",
-  description: "Dashboard corporativo de contratos, medições e evolução de obras da Pedra Norte.",
+  title: "MSM Industrial",
+  description: "Sistema interno de medições",
 };
 
-type RootLayoutProps = {
+export default function RootLayout({
+  children,
+}: Readonly<{
   children: React.ReactNode;
-};
-
-export default function RootLayout({ children }: RootLayoutProps) {
+}>) {
   return (
     <html lang="pt-BR">
       <body>{children}</body>
