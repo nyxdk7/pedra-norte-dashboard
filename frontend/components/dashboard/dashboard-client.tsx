@@ -28,6 +28,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { useChartPalette } from "@/components/configuracoes/chart-palette-provider";
 import { MetricCard } from "@/components/layout/metric-card";
 import {
   buscarContratos,
@@ -43,29 +44,11 @@ import {
   formatarPercentual,
 } from "@/lib/formatters";
 
-const CHART_COLORS = [
-  "#111827",
-  "#334155",
-  "#475569",
-  "#64748b",
-  "#1e3a8a",
-  "#1d4ed8",
-  "#0369a1",
-  "#0f766e",
-];
-
-type SelectOption = {
-  value: string;
-  label: string;
-};
+type SelectOption = { value: string; label: string };
 
 function montarOpcoesUnicas(valores: string[], prefixo = "") {
   const unicos = Array.from(
-    new Set(
-      valores
-        .map((valor) => String(valor || "").trim())
-        .filter(Boolean),
-    ),
+    new Set(valores.map((valor) => String(valor || "").trim()).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
 
   return unicos.map((valor) => ({
@@ -76,16 +59,15 @@ function montarOpcoesUnicas(valores: string[], prefixo = "") {
 
 function DashboardLoadingCards() {
   return (
-    <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {Array.from({ length: 9 }).map((_, index) => (
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, index) => (
         <div
           key={index}
-          className="h-[156px] animate-pulse border border-slate-200 bg-white p-5 shadow-sm"
+          className="h-[104px] animate-pulse rounded-md border border-slate-200 bg-white p-4"
         >
-          <div className="h-3 w-32 bg-slate-200" />
-          <div className="mt-7 h-8 w-40 bg-slate-200" />
-          <div className="mt-5 h-3 w-full bg-slate-100" />
-          <div className="mt-2 h-3 w-2/3 bg-slate-100" />
+          <div className="h-2.5 w-24 rounded bg-slate-200" />
+          <div className="mt-4 h-6 w-40 rounded bg-slate-200" />
+          <div className="mt-3 h-2.5 w-28 rounded bg-slate-100" />
         </div>
       ))}
     </section>
@@ -94,17 +76,17 @@ function DashboardLoadingCards() {
 
 function ChartEmptyState() {
   return (
-    <div className="flex h-72 items-center justify-center px-5 py-6 text-sm text-slate-400">
-      Nenhum dado encontrado para montar este gráfico.
+    <div className="flex h-64 items-center justify-center px-5 text-sm text-slate-400">
+      Nenhum dado disponível para este gráfico.
     </div>
   );
 }
 
 function ChartLoadingState() {
   return (
-    <div className="flex h-72 items-center justify-center px-5 py-6 text-sm font-semibold text-slate-500">
-      <span className="mr-3 h-4 w-4 animate-spin border-2 border-slate-300 border-t-slate-900" />
-      Carregando gráfico...
+    <div className="flex h-64 items-center justify-center gap-2 text-sm text-slate-500">
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
+      Carregando dados...
     </div>
   );
 }
@@ -117,26 +99,29 @@ type ChartCardProps = {
 
 function ChartCard({ title, subtitle, children }: ChartCardProps) {
   return (
-    <div className="border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-5 py-4">
-        <h2 className="text-base font-bold text-slate-950">{title}</h2>
-        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+    <section className="rounded-md border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="border-b border-slate-100 px-4 py-3.5">
+        <h2 className="text-[14px] font-semibold text-slate-900">{title}</h2>
+        <p className="mt-0.5 text-[12px] text-slate-500">{subtitle}</p>
       </div>
-
       {children}
-    </div>
+    </section>
   );
 }
 
+const selectClass =
+  "h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-[13px] text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+
 export function DashboardClient() {
+  const { palette } = useChartPalette();
+  const cores = palette.cores;
+
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
-
   const [contrato, setContrato] = useState("");
   const [status, setStatus] = useState("");
   const [situacao, setSituacao] = useState("");
-
   const [opcoesContrato, setOpcoesContrato] = useState<SelectOption[]>([]);
   const [opcoesStatus, setOpcoesStatus] = useState<SelectOption[]>([]);
   const [opcoesSituacao, setOpcoesSituacao] = useState<SelectOption[]>([]);
@@ -147,24 +132,17 @@ export function DashboardClient() {
         buscarContratos(),
         buscarMedicoes(),
       ]);
-
       setOpcoesContrato(
         montarOpcoesUnicas(
           contratosResposta.results.map((item) => item.numero_contrato),
           "CT",
         ),
       );
-
       setOpcoesStatus(
-        montarOpcoesUnicas(
-          contratosResposta.results.map((item) => item.status),
-        ),
+        montarOpcoesUnicas(contratosResposta.results.map((item) => item.status)),
       );
-
       setOpcoesSituacao(
-        montarOpcoesUnicas(
-          medicoesResposta.results.map((item) => item.situacao),
-        ),
+        montarOpcoesUnicas(medicoesResposta.results.map((item) => item.situacao)),
       );
     } catch {
       setOpcoesContrato([]);
@@ -178,17 +156,13 @@ export function DashboardClient() {
       try {
         setCarregando(true);
         setErro("");
-
-        const dados = await buscarDashboard(filtros);
-
-        setDashboard(dados);
+        setDashboard(await buscarDashboard(filtros));
       } catch (error) {
-        const mensagem =
+        setErro(
           error instanceof Error
             ? error.message
-            : "Não foi possível carregar o dashboard.";
-
-        setErro(mensagem);
+            : "Não foi possível carregar o dashboard.",
+        );
         setDashboard(null);
       } finally {
         setCarregando(false);
@@ -198,15 +172,16 @@ export function DashboardClient() {
   );
 
   useEffect(() => {
-    carregarOpcoesFiltros();
+    const timeout = window.setTimeout(() => void carregarOpcoesFiltros(), 0);
+    return () => window.clearTimeout(timeout);
   }, [carregarOpcoesFiltros]);
 
   useEffect(() => {
-    carregarDashboard({
-      contrato,
-      status,
-      situacao,
-    });
+    const timeout = window.setTimeout(
+      () => void carregarDashboard({ contrato, status, situacao }),
+      0,
+    );
+    return () => window.clearTimeout(timeout);
   }, [contrato, status, situacao, carregarDashboard]);
 
   function limparFiltros() {
@@ -216,97 +191,55 @@ export function DashboardClient() {
   }
 
   const cards = dashboard?.cards;
-
   const evolucaoMensal = dashboard?.graficos.evolucao_mensal || [];
   const resumoFinanceiro = dashboard?.graficos.resumo_financeiro || [];
   const contratadoMedido = dashboard?.graficos.contratado_x_medido || [];
-  const rankingEvolucao = dashboard?.graficos.ranking_evolucao || [];
+  const rankingLimitado = (dashboard?.graficos.ranking_evolucao || []).slice(0, 8);
   const contratosPorStatus = dashboard?.graficos.contratos_por_status || [];
   const medicoesPorSituacao = dashboard?.graficos.medicoes_por_situacao || [];
 
-  const rankingLimitado = rankingEvolucao.slice(0, 8);
-
   return (
-    <div className="space-y-6 px-5 py-6 lg:px-8">
-      <section className="border border-slate-200 bg-white shadow-sm">
-        <div className="grid grid-cols-1 gap-4 px-5 py-5 md:grid-cols-[1fr_1fr_1fr_auto]">
+    <div className="space-y-4 px-4 py-4 sm:px-6 lg:px-7">
+      <section className="rounded-md border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]">
           <div>
-            <label
-              htmlFor="contrato"
-              className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-400"
-            >
+            <label className="mb-1.5 block text-[11px] font-medium text-slate-500">
               Contrato
             </label>
-
-            <select
-              id="contrato"
-              value={contrato}
-              onChange={(event) => setContrato(event.target.value)}
-              className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            >
+            <select value={contrato} onChange={(e) => setContrato(e.target.value)} className={selectClass}>
               <option value="">Todos os contratos</option>
-
               {opcoesContrato.map((opcao) => (
-                <option key={opcao.value} value={opcao.value}>
-                  {opcao.label}
-                </option>
+                <option key={opcao.value} value={opcao.value}>{opcao.label}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label
-              htmlFor="status"
-              className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-400"
-            >
+            <label className="mb-1.5 block text-[11px] font-medium text-slate-500">
               Status
             </label>
-
-            <select
-              id="status"
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            >
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass}>
               <option value="">Todos os status</option>
-
               {opcoesStatus.map((opcao) => (
-                <option key={opcao.value} value={opcao.value}>
-                  {opcao.label}
-                </option>
+                <option key={opcao.value} value={opcao.value}>{opcao.label}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label
-              htmlFor="situacao"
-              className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-400"
-            >
+            <label className="mb-1.5 block text-[11px] font-medium text-slate-500">
               Situação
             </label>
-
-            <select
-              id="situacao"
-              value={situacao}
-              onChange={(event) => setSituacao(event.target.value)}
-              className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
-            >
+            <select value={situacao} onChange={(e) => setSituacao(e.target.value)} className={selectClass}>
               <option value="">Todas as situações</option>
-
               {opcoesSituacao.map((opcao) => (
-                <option key={opcao.value} value={opcao.value}>
-                  {opcao.label}
-                </option>
+                <option key={opcao.value} value={opcao.value}>{opcao.label}</option>
               ))}
             </select>
           </div>
-
           <div className="flex items-end">
             <button
               type="button"
               onClick={limparFiltros}
-              className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 md:w-auto"
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-4 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50 md:w-auto"
             >
               Limpar
             </button>
@@ -315,465 +248,139 @@ export function DashboardClient() {
       </section>
 
       {erro && (
-        <section className="border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
           {erro}
-        </section>
+        </div>
       )}
 
       {carregando && <DashboardLoadingCards />}
 
       {!carregando && cards && (
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            label="Total contratado"
-            value={formatarMoeda(cards.total_contratado)}
-            description="Valor total dos contratos cadastrados"
-            icon={Landmark}
-          />
-
-          <MetricCard
-            label="Total medido"
-            value={formatarMoeda(cards.total_medido)}
-            description="Soma das medições lançadas no sistema"
-            icon={BarChart3}
-          />
-
-          <MetricCard
-            label="Total pago"
-            value={formatarMoeda(cards.total_pago)}
-            description="Pagamentos identificados nas medições"
-            icon={Wallet}
-          />
-
-          <MetricCard
-            label="Saldo estimado"
-            value={formatarMoeda(cards.saldo_estimado)}
-            description="Diferença entre contratado e medido"
-            icon={BriefcaseBusiness}
-          />
-
-          <MetricCard
-            label="Total faturado"
-            value={formatarMoeda(cards.total_faturado)}
-            description="Valor faturado no período filtrado"
-            icon={FileCheck2}
-          />
-
-          <MetricCard
-            label="A processar"
-            value={formatarMoeda(cards.total_a_processar)}
-            description="Medições pendentes de processamento"
-            icon={FileSpreadsheet}
-          />
-
-          <MetricCard
-            label="Contratos"
-            value={formatarNumero(cards.total_contratos)}
-            description="Quantidade de contratos monitorados"
-            icon={ClipboardList}
-          />
-
-          <MetricCard
-            label="Medições"
-            value={formatarNumero(cards.total_medicoes)}
-            description="Quantidade de medições importadas"
-            icon={FileSpreadsheet}
-          />
-
-          <MetricCard
-            label="Evolução"
-            value={formatarPercentual(cards.percentual_evolucao)}
-            description="Percentual financeiro executado"
-            icon={Percent}
-          />
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard label="Total contratado" value={formatarMoeda(cards.total_contratado)} description="Valor dos contratos" icon={Landmark} />
+          <MetricCard label="Total medido" value={formatarMoeda(cards.total_medido)} description="Medições registradas" icon={BarChart3} />
+          <MetricCard label="Total pago" value={formatarMoeda(cards.total_pago)} description="Pagamentos identificados" icon={Wallet} />
+          <MetricCard label="Saldo estimado" value={formatarMoeda(cards.saldo_estimado)} description="Contratado menos medido" icon={BriefcaseBusiness} />
+          <MetricCard label="Total faturado" value={formatarMoeda(cards.total_faturado)} description="Faturamento acumulado" icon={FileCheck2} />
+          <MetricCard label="A processar" value={formatarMoeda(cards.total_a_processar)} description="Valor ainda pendente" icon={FileSpreadsheet} />
+          <MetricCard label="Contratos" value={formatarNumero(cards.total_contratos)} description="Contratos monitorados" icon={ClipboardList} />
+          <MetricCard label="Medições" value={formatarNumero(cards.total_medicoes)} description={`${formatarPercentual(cards.percentual_evolucao)} executado`} icon={Percent} />
         </section>
       )}
 
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <ChartCard
-          title="Evolução mensal"
-          subtitle="Valor medido agrupado por mês."
-        >
-          {carregando ? (
-            <ChartLoadingState />
-          ) : evolucaoMensal.length ? (
-            <div className="h-72 px-4 py-5">
+      <section className="grid gap-4 xl:grid-cols-2">
+        <ChartCard title="Evolução mensal" subtitle="Valor medido por período">
+          {carregando ? <ChartLoadingState /> : evolucaoMensal.length ? (
+            <div className="h-64 p-3">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={evolucaoMensal}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-
-                  <XAxis
-                    dataKey="mes_ano"
-                    tick={{ fontSize: 12, fill: "#475569" }}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={{ stroke: "#cbd5e1" }}
-                  />
-
-                  <YAxis
-                    tick={{ fontSize: 12, fill: "#475569" }}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={{ stroke: "#cbd5e1" }}
-                    tickFormatter={(value) => formatarMoedaCompacta(value)}
-                  />
-
-                  <Tooltip
-                    formatter={(value) => [
-                      formatarMoeda(Number(value)),
-                      "Valor medido",
-                    ]}
-                    labelFormatter={(label) => `Mês: ${label}`}
-                  />
-
-                  <Line
-                    type="monotone"
-                    dataKey="valor_medido"
-                    stroke="#111827"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "#111827", strokeWidth: 0 }}
-                    activeDot={{ r: 6 }}
-                  />
+                <LineChart data={evolucaoMensal} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e8edf3" vertical={false} />
+                  <XAxis dataKey="mes_ano" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={(value) => formatarMoedaCompacta(value)} width={64} />
+                  <Tooltip formatter={(value) => [formatarMoeda(Number(value)), "Valor medido"]} labelFormatter={(label) => `Período: ${label}`} />
+                  <Line type="monotone" dataKey="valor_medido" stroke={cores[0] || "#2f80ed"} strokeWidth={2.2} dot={false} activeDot={{ r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          ) : (
-            <ChartEmptyState />
-          )}
+          ) : <ChartEmptyState />}
         </ChartCard>
 
-        <ChartCard
-          title="Resumo financeiro"
-          subtitle="Comparativo entre contratado, medido, pago, faturado e a processar."
-        >
-          {carregando ? (
-            <ChartLoadingState />
-          ) : resumoFinanceiro.length ? (
-            <div className="h-72 px-4 py-5">
+        <ChartCard title="Resumo financeiro" subtitle="Comparação entre os principais valores">
+          {carregando ? <ChartLoadingState /> : resumoFinanceiro.length ? (
+            <div className="h-64 p-3">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={resumoFinanceiro}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-
-                  <XAxis
-                    dataKey="nome"
-                    tick={{ fontSize: 12, fill: "#475569" }}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={{ stroke: "#cbd5e1" }}
-                  />
-
-                  <YAxis
-                    tick={{ fontSize: 12, fill: "#475569" }}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={{ stroke: "#cbd5e1" }}
-                    tickFormatter={(value) => formatarMoedaCompacta(value)}
-                  />
-
-                  <Tooltip
-                    formatter={(value) => [
-                      formatarMoeda(Number(value)),
-                      "Valor",
-                    ]}
-                  />
-
-                  <Bar
-                    dataKey="valor"
-                    fill="#111827"
-                    radius={[0, 0, 0, 0]}
-                    maxBarSize={58}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <ChartEmptyState />
-          )}
-        </ChartCard>
-      </section>
-
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <ChartCard
-          title="Contratado x medido por contrato"
-          subtitle="Comparativo financeiro entre valor contratado e valor medido."
-        >
-          {carregando ? (
-            <ChartLoadingState />
-          ) : contratadoMedido.length ? (
-            <div className="h-80 px-4 py-5">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={contratadoMedido}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-
-                  <XAxis
-                    dataKey="numero_contrato"
-                    tick={{ fontSize: 12, fill: "#475569" }}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={{ stroke: "#cbd5e1" }}
-                  />
-
-                  <YAxis
-                    tick={{ fontSize: 12, fill: "#475569" }}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={{ stroke: "#cbd5e1" }}
-                    tickFormatter={(value) => formatarMoedaCompacta(value)}
-                  />
-
-                  <Tooltip
-                    formatter={(value, name) => [
-                      formatarMoeda(Number(value)),
-                      name === "valor_contratado"
-                        ? "Valor contratado"
-                        : "Valor medido",
-                    ]}
-                    labelFormatter={(label) => `Contrato: ${label}`}
-                  />
-
-                  <Legend />
-
-                  <Bar
-                    dataKey="valor_contratado"
-                    name="Contratado"
-                    fill="#111827"
-                    maxBarSize={42}
-                  />
-
-                  <Bar
-                    dataKey="valor_medido"
-                    name="Medido"
-                    fill="#475569"
-                    maxBarSize={42}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <ChartEmptyState />
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Ranking de evolução"
-          subtitle="Contratos com maior percentual financeiro executado."
-        >
-          {carregando ? (
-            <ChartLoadingState />
-          ) : rankingLimitado.length ? (
-            <div className="h-80 px-4 py-5">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={rankingLimitado}
-                  layout="vertical"
-                  margin={{
-                    top: 5,
-                    right: 25,
-                    left: 25,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-
-                  <XAxis
-                    type="number"
-                    tick={{ fontSize: 12, fill: "#475569" }}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={{ stroke: "#cbd5e1" }}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-
-                  <YAxis
-                    type="category"
-                    dataKey="numero_contrato"
-                    width={95}
-                    tick={{ fontSize: 12, fill: "#475569" }}
-                    axisLine={{ stroke: "#cbd5e1" }}
-                    tickLine={{ stroke: "#cbd5e1" }}
-                  />
-
-                  <Tooltip
-                    formatter={(value) => [
-                      formatarPercentual(Number(value)),
-                      "Execução",
-                    ]}
-                    labelFormatter={(label) => `Contrato: ${label}`}
-                  />
-
-                  <Bar
-                    dataKey="percentual_executado"
-                    fill="#111827"
-                    maxBarSize={26}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <ChartEmptyState />
-          )}
-        </ChartCard>
-      </section>
-
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <ChartCard
-          title="Contratos por status"
-          subtitle="Distribuição dos contratos conforme o status cadastrado."
-        >
-          {carregando ? (
-            <ChartLoadingState />
-          ) : contratosPorStatus.length ? (
-            <div className="h-80 px-4 py-5">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={contratosPorStatus}
-                    dataKey="total"
-                    nameKey="status"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={95}
-                    label={(item) => {
-                      const payload = item as unknown as {
-                        payload?: {
-                          status?: string;
-                          total?: number;
-                        };
-                        name?: string | number;
-                        value?: string | number;
-                      };
-
-                      const status =
-                        payload.payload?.status ||
-                        String(payload.name || "Status");
-
-                      const total = Number(
-                        payload.payload?.total ?? payload.value ?? 0,
-                      );
-
-                      return `${status}: ${formatarNumero(total)}`;
-                    }}
-                  >
-                    {contratosPorStatus.map((_, index) => (
-                      <Cell
-                        key={`status-${index}`}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
-                      />
+                <BarChart data={resumoFinanceiro} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e8edf3" vertical={false} />
+                  <XAxis dataKey="nome" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={(value) => formatarMoedaCompacta(value)} width={64} />
+                  <Tooltip formatter={(value) => [formatarMoeda(Number(value)), "Valor"]} />
+                  <Bar dataKey="valor" radius={[4, 4, 0, 0]} maxBarSize={38}>
+                    {resumoFinanceiro.map((_, index) => (
+                      <Cell key={index} fill={cores[index % cores.length] || "#2f80ed"} />
                     ))}
-                  </Pie>
-
-                  <Tooltip
-                    formatter={(value) => [
-                      formatarNumero(Number(value)),
-                      "Contratos",
-                    ]}
-                  />
-
-                  <Legend />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
-          ) : (
-            <ChartEmptyState />
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Medições por situação"
-          subtitle="Distribuição das medições conforme a situação atual."
-        >
-          {carregando ? (
-            <ChartLoadingState />
-          ) : medicoesPorSituacao.length ? (
-            <div className="h-80 px-4 py-5">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={medicoesPorSituacao}
-                    dataKey="total"
-                    nameKey="situacao"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={95}
-                    label={(item) => {
-                      const payload = item as unknown as {
-                        payload?: {
-                          situacao?: string;
-                          total?: number;
-                        };
-                        name?: string | number;
-                        value?: string | number;
-                      };
-
-                      const situacao =
-                        payload.payload?.situacao ||
-                        String(payload.name || "Situação");
-
-                      const total = Number(
-                        payload.payload?.total ?? payload.value ?? 0,
-                      );
-
-                      return `${situacao}: ${formatarNumero(total)}`;
-                    }}
-                  >
-                    {medicoesPorSituacao.map((_, index) => (
-                      <Cell
-                        key={`situacao-${index}`}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-
-                  <Tooltip
-                    formatter={(value) => [
-                      formatarNumero(Number(value)),
-                      "Medições",
-                    ]}
-                  />
-
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <ChartEmptyState />
-          )}
+          ) : <ChartEmptyState />}
         </ChartCard>
       </section>
 
-      <section className="border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-950">
-              Status da conexão
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Dados carregados diretamente da API Django.
-            </p>
-          </div>
+      <section className="grid gap-4 xl:grid-cols-2">
+        <ChartCard title="Contratado x medido" subtitle="Comparativo por contrato">
+          {carregando ? <ChartLoadingState /> : contratadoMedido.length ? (
+            <div className="h-72 p-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={contratadoMedido} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e8edf3" vertical={false} />
+                  <XAxis dataKey="numero_contrato" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={(value) => formatarMoedaCompacta(value)} width={64} />
+                  <Tooltip formatter={(value, name) => [formatarMoeda(Number(value)), name === "valor_contratado" ? "Contratado" : "Medido"]} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="valor_contratado" name="Contratado" fill={cores[0] || "#2f80ed"} radius={[3, 3, 0, 0]} maxBarSize={32} />
+                  <Bar dataKey="valor_medido" name="Medido" fill={cores[1] || "#56b4d3"} radius={[3, 3, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : <ChartEmptyState />}
+        </ChartCard>
 
-          <button
-            type="button"
-            onClick={() =>
-              carregarDashboard({
-                contrato,
-                status,
-                situacao,
-              })
-            }
-            className="flex h-10 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            <RefreshCw size={17} />
-            Recarregar
-          </button>
-        </div>
+        <ChartCard title="Ranking de evolução" subtitle="Contratos com maior execução financeira">
+          {carregando ? <ChartLoadingState /> : rankingLimitado.length ? (
+            <div className="h-72 p-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rankingLimitado} layout="vertical" margin={{ top: 8, right: 16, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e8edf3" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={(value) => `${value}%`} />
+                  <YAxis type="category" dataKey="numero_contrato" width={82} tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(value) => [formatarPercentual(Number(value)), "Execução"]} />
+                  <Bar dataKey="percentual_executado" fill={cores[2] || "#3ba272"} radius={[0, 4, 4, 0]} maxBarSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : <ChartEmptyState />}
+        </ChartCard>
+      </section>
 
-        <div className="px-5 py-5 text-sm text-slate-600">
-          {dashboard ? (
-            <p>
-              API conectada. Foram encontrados{" "}
-              <strong>{formatarNumero(dashboard.cards.total_contratos)}</strong>{" "}
-              contratos e{" "}
-              <strong>{formatarNumero(dashboard.cards.total_medicoes)}</strong>{" "}
-              medições.
-            </p>
-          ) : (
-            <p>Nenhum dado carregado no momento.</p>
-          )}
-        </div>
+      <section className="grid gap-4 xl:grid-cols-2">
+        {[
+          { title: "Contratos por status", subtitle: "Distribuição atual dos contratos", data: contratosPorStatus, key: "status", label: "Contratos" },
+          { title: "Medições por situação", subtitle: "Etapa atual das medições", data: medicoesPorSituacao, key: "situacao", label: "Medições" },
+        ].map((grafico) => (
+          <ChartCard key={grafico.title} title={grafico.title} subtitle={grafico.subtitle}>
+            {carregando ? <ChartLoadingState /> : grafico.data.length ? (
+              <div className="h-64 p-3">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={grafico.data} dataKey="total" nameKey={grafico.key} innerRadius={55} outerRadius={82} paddingAngle={2}>
+                      {grafico.data.map((_, index) => (
+                        <Cell key={index} fill={cores[index % cores.length] || "#2f80ed"} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [formatarNumero(Number(value)), grafico.label]} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <ChartEmptyState />}
+          </ChartCard>
+        ))}
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[12px] text-slate-500">
+          {dashboard
+            ? `${formatarNumero(dashboard.cards.total_contratos)} contratos e ${formatarNumero(dashboard.cards.total_medicoes)} medições carregados.`
+            : "Nenhum dado carregado no momento."}
+        </p>
+        <button
+          type="button"
+          onClick={() => carregarDashboard({ contrato, status, situacao })}
+          className="flex h-8 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-[12px] font-medium text-slate-600 hover:bg-slate-50"
+        >
+          <RefreshCw size={15} />
+          Recarregar
+        </button>
       </section>
     </div>
   );

@@ -20,12 +20,16 @@ export default function LoginPage() {
   const [erro, setErro] = useState("");
 
   useEffect(() => {
-    const usuarioSalvo = window.localStorage.getItem(STORAGE_KEY);
+    const timeout = window.setTimeout(() => {
+      const usuarioSalvo = window.localStorage.getItem(STORAGE_KEY);
 
-    if (usuarioSalvo) {
-      setUsername(usuarioSalvo);
-      setLembrarUsuario(true);
-    }
+      if (usuarioSalvo) {
+        setUsername(usuarioSalvo);
+        setLembrarUsuario(true);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -59,14 +63,14 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col bg-slate-100">
       <section className="flex flex-1 items-center justify-center px-5 py-10">
-        <div className="w-full max-w-xl">
-          <div className="mb-8 flex justify-center">
+        <div className="w-full max-w-md">
+          <div className="mb-6 flex justify-center">
             <Brand />
           </div>
 
-          <div className="border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 px-8 py-7">
-              <h2 className="text-2xl font-bold tracking-[-0.03em] text-slate-950">
+          <div className="border border-slate-200 bg-white rounded-md shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+            <div className="border-b border-slate-200 px-6 py-5">
+              <h2 className="text-xl font-semibold tracking-[-0.03em] text-slate-950">
                 Entrar no sistema
               </h2>
 
@@ -75,7 +79,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5 px-8 py-7">
+            <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
               {erro && (
                 <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                   {erro}
@@ -85,7 +89,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="username"
-                  className="mb-2 block text-sm font-bold text-slate-950"
+                  className="mb-2 block text-sm font-medium text-slate-800"
                 >
                   Usuário
                 </label>
@@ -103,7 +107,7 @@ export default function LoginPage() {
                     onChange={(event) => setUsername(event.target.value)}
                     placeholder="Ex: admin"
                     autoComplete="username"
-                    className="h-12 w-full border border-slate-300 bg-white pl-12 pr-4 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
+                    className="h-11 w-full border border-slate-300 bg-white pl-12 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
               </div>
@@ -111,7 +115,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="mb-2 block text-sm font-bold text-slate-950"
+                  className="mb-2 block text-sm font-medium text-slate-800"
                 >
                   Senha
                 </label>
@@ -129,7 +133,7 @@ export default function LoginPage() {
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Digite sua senha"
                     autoComplete="current-password"
-                    className="h-12 w-full border border-slate-300 bg-white pl-12 pr-12 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
+                    className="h-11 w-full border border-slate-300 bg-white pl-12 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
                   />
 
                   <button

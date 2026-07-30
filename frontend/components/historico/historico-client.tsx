@@ -107,7 +107,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function HistoricoLoading() {
   return (
-    <div className="border border-slate-200 bg-white px-5 py-8 text-sm font-semibold text-slate-500 shadow-sm">
+    <div className="rounded-md border border-slate-200 bg-white px-5 py-8 text-sm font-semibold text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <span className="mr-3 inline-block h-4 w-4 animate-spin border-2 border-slate-300 border-t-slate-900 align-[-2px]" />
       Carregando histórico...
     </div>
@@ -120,7 +120,7 @@ type HistoricoCardMobileProps = {
 
 function HistoricoCardMobile({ item }: HistoricoCardMobileProps) {
   return (
-    <article className="border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="rounded-md border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
@@ -228,7 +228,7 @@ export function HistoricoClient() {
   }, [historicos]);
 
   return (
-    <div className="space-y-6 px-5 py-6 lg:px-8">
+    <div className="space-y-4 px-4 py-4 sm:px-6 lg:px-7">
       {erro && (
         <section className="border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
           {erro}
@@ -269,7 +269,7 @@ export function HistoricoClient() {
             />
           </section>
 
-          <section className="border border-slate-200 bg-white shadow-sm">
+          <section className="rounded-md border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-950">

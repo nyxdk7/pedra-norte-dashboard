@@ -45,14 +45,14 @@ export function AlterarSenhaObrigatoriaClient() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <section className="border border-amber-200 bg-amber-50 p-5 shadow-sm">
+      <section className="border border-amber-200 bg-amber-50 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex gap-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center border border-amber-300 bg-white text-amber-700">
             <KeyRound className="h-5 w-5" />
           </div>
 
           <div>
-            <h2 className="text-base font-black text-amber-950">
+            <h2 className="text-base font-semibold text-amber-950">
               Troca de senha obrigatória
             </h2>
 
@@ -66,7 +66,7 @@ export function AlterarSenhaObrigatoriaClient() {
 
       <form
         onSubmit={handleSubmit}
-        className="border border-slate-200 bg-white p-5 shadow-sm"
+        className="rounded-md border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
       >
         <div className="space-y-4">
           {erro && (
@@ -82,7 +82,7 @@ export function AlterarSenhaObrigatoriaClient() {
           )}
 
           <div>
-            <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
               Nova senha
             </label>
 
@@ -101,7 +101,7 @@ export function AlterarSenhaObrigatoriaClient() {
           </div>
 
           <div>
-            <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
               Confirmar senha
             </label>
 
@@ -122,7 +122,7 @@ export function AlterarSenhaObrigatoriaClient() {
           <button
             type="submit"
             disabled={carregando}
-            className="flex h-12 w-full items-center justify-center gap-2 bg-slate-950 px-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-12 w-full items-center justify-center gap-2 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Save className="h-4 w-4" />
             {carregando ? "Salvando..." : "Salvar nova senha"}

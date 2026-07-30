@@ -94,7 +94,7 @@ function statusBadge(status: string) {
 
 function ContratosLoading() {
   return (
-    <div className="border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
+    <div className="rounded-md border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       Carregando contratos...
     </div>
   );
@@ -110,14 +110,14 @@ function ContratoCardMobile({ contrato }: ContratoCardMobileProps) {
   )}`;
 
   return (
-    <article className="border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="rounded-md border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-slate-400">
             Contrato
           </p>
 
-          <h3 className="mt-1 text-base font-black text-slate-950">
+          <h3 className="mt-1 text-base font-semibold text-slate-950">
             {contrato.numero_contrato || "-"}
           </h3>
         </div>
@@ -293,18 +293,18 @@ export function ContratosClient() {
   const podeExportar = Boolean(dados?.permissions.pode_exportar);
 
   return (
-    <div className="space-y-6">
-      <section className="border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="grid gap-4 xl:grid-cols-[1fr_1fr_auto_auto_auto]">
+    <div className="space-y-4 px-4 py-4 sm:px-6 lg:px-7">
+      <section className="rounded-md border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+        <div className="grid gap-3 xl:grid-cols-[1fr_1fr_auto_auto_auto]">
           <div>
-            <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
               Contrato
             </label>
 
             <select
               value={contrato}
               onChange={(event) => setContrato(event.target.value)}
-              className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-[13px] text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
             >
               <option value="">Todos os contratos</option>
 
@@ -317,14 +317,14 @@ export function ContratosClient() {
           </div>
 
           <div>
-            <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
               Status
             </label>
 
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
-              className="h-11 w-full border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-[13px] text-slate-950 outline-none transition focus:border-slate-700 focus:ring-2 focus:ring-slate-200"
             >
               <option value="">Todos os status</option>
 
@@ -340,7 +340,7 @@ export function ContratosClient() {
             <button
               type="button"
               onClick={limparFiltros}
-              className="h-11 w-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 xl:w-auto"
+              className="h-9 w-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 xl:w-auto"
             >
               Limpar
             </button>
@@ -351,7 +351,7 @@ export function ContratosClient() {
               type="button"
               onClick={handleExportarPdf}
               disabled={!podeExportar}
-              className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+              className="flex h-9 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
             >
               <FileText className="h-4 w-4" />
               PDF
@@ -363,7 +363,7 @@ export function ContratosClient() {
               type="button"
               onClick={handleExportarExcel}
               disabled={!podeExportar || exportandoExcel}
-              className="flex h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
+              className="flex h-9 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 xl:w-auto"
             >
               <FileSpreadsheet className="h-4 w-4" />
               {exportandoExcel ? "Exportando..." : "XLS"}
@@ -420,10 +420,10 @@ export function ContratosClient() {
       )}
 
       {!carregando && (
-        <section className="border border-slate-200 bg-white shadow-sm">
+        <section className="rounded-md border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-base font-black text-slate-950">
+              <h2 className="text-base font-semibold text-slate-950">
                 Contratos cadastrados
               </h2>
 
@@ -456,7 +456,7 @@ export function ContratosClient() {
                 />
               ))
             ) : (
-              <div className="border border-slate-200 bg-white p-5 text-sm text-slate-500">
+              <div className="rounded-md border border-slate-200 bg-white p-5 text-sm text-slate-500">
                 Nenhum contrato encontrado.
               </div>
             )}
@@ -465,7 +465,7 @@ export function ContratosClient() {
           <div className="hidden overflow-x-auto lg:block">
             <table className="min-w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
                   <th className="px-4 py-3">Contrato</th>
                   <th className="px-4 py-3">Empresa</th>
                   <th className="px-4 py-3">Objeto</th>

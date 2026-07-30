@@ -104,7 +104,11 @@ export function ChartPaletteProvider({ children }: ChartPaletteProviderProps) {
   }, []);
 
   useEffect(() => {
-    recarregarPaleta();
+    const timeout = window.setTimeout(() => {
+      void recarregarPaleta();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, [recarregarPaleta]);
 
   const value = useMemo<ChartPaletteContextValue>(
@@ -139,103 +143,6 @@ export function ChartPaletteProvider({ children }: ChartPaletteProviderProps) {
   return (
     <ChartPaletteContext.Provider value={value}>
       <div style={variaveisCss} className="min-h-screen">
-        <style jsx global>{`
-          .recharts-line-curve {
-            stroke: var(--chart-primary) !important;
-          }
-
-          .recharts-dot,
-          .recharts-active-dot {
-            stroke: var(--chart-primary) !important;
-            fill: var(--chart-primary) !important;
-          }
-
-          .recharts-bar-rectangle path,
-          .recharts-bar-rectangle rect {
-            fill: var(--chart-primary) !important;
-          }
-
-          .recharts-pie-sector:nth-of-type(8n + 1) path {
-            fill: var(--chart-1) !important;
-          }
-
-          .recharts-pie-sector:nth-of-type(8n + 2) path {
-            fill: var(--chart-2) !important;
-          }
-
-          .recharts-pie-sector:nth-of-type(8n + 3) path {
-            fill: var(--chart-3) !important;
-          }
-
-          .recharts-pie-sector:nth-of-type(8n + 4) path {
-            fill: var(--chart-4) !important;
-          }
-
-          .recharts-pie-sector:nth-of-type(8n + 5) path {
-            fill: var(--chart-5) !important;
-          }
-
-          .recharts-pie-sector:nth-of-type(8n + 6) path {
-            fill: var(--chart-6) !important;
-          }
-
-          .recharts-pie-sector:nth-of-type(8n + 7) path {
-            fill: var(--chart-7) !important;
-          }
-
-          .recharts-pie-sector:nth-of-type(8n + 8) path {
-            fill: var(--chart-8) !important;
-          }
-
-          .recharts-legend-item:nth-of-type(8n + 1) path,
-          .recharts-legend-item:nth-of-type(8n + 1) .recharts-surface {
-            color: var(--chart-1) !important;
-            fill: var(--chart-1) !important;
-          }
-
-          .recharts-legend-item:nth-of-type(8n + 2) path,
-          .recharts-legend-item:nth-of-type(8n + 2) .recharts-surface {
-            color: var(--chart-2) !important;
-            fill: var(--chart-2) !important;
-          }
-
-          .recharts-legend-item:nth-of-type(8n + 3) path,
-          .recharts-legend-item:nth-of-type(8n + 3) .recharts-surface {
-            color: var(--chart-3) !important;
-            fill: var(--chart-3) !important;
-          }
-
-          .recharts-legend-item:nth-of-type(8n + 4) path,
-          .recharts-legend-item:nth-of-type(8n + 4) .recharts-surface {
-            color: var(--chart-4) !important;
-            fill: var(--chart-4) !important;
-          }
-
-          .recharts-legend-item:nth-of-type(8n + 5) path,
-          .recharts-legend-item:nth-of-type(8n + 5) .recharts-surface {
-            color: var(--chart-5) !important;
-            fill: var(--chart-5) !important;
-          }
-
-          .recharts-legend-item:nth-of-type(8n + 6) path,
-          .recharts-legend-item:nth-of-type(8n + 6) .recharts-surface {
-            color: var(--chart-6) !important;
-            fill: var(--chart-6) !important;
-          }
-
-          .recharts-legend-item:nth-of-type(8n + 7) path,
-          .recharts-legend-item:nth-of-type(8n + 7) .recharts-surface {
-            color: var(--chart-7) !important;
-            fill: var(--chart-7) !important;
-          }
-
-          .recharts-legend-item:nth-of-type(8n + 8) path,
-          .recharts-legend-item:nth-of-type(8n + 8) .recharts-surface {
-            color: var(--chart-8) !important;
-            fill: var(--chart-8) !important;
-          }
-        `}</style>
-
         {children}
       </div>
     </ChartPaletteContext.Provider>

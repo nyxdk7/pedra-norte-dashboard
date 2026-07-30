@@ -5,8 +5,8 @@ export default function DashboardPage() {
   return (
     <>
       <AppHeader
-        title="MSM Industrial"
-        subtitle="Resumo geral dos contratos, medições e evolução financeira"
+        title="Visão geral"
+        subtitle="Indicadores financeiros, contratos e andamento das medições"
         section="Dashboard"
       />
 

@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f3f5f8;
-  --foreground: #172033;
+  --background: #f5f7fa;
+  --foreground: #1f2937;
   --card: #ffffff;
   --muted: #667085;
-  --border: #d9dee7;
-  --primary: #111827;
-  --primary-hover: #1f2937;
-  --accent: #2563eb;
-  --success: #157347;
-  --warning: #b7791f;
+  --border: #dfe4ea;
+  --primary: #1f5fae;
+  --primary-hover: #184d8f;
+  --accent: #2f80ed;
+  --success: #2e7d32;
+  --warning: #b76e00;
   --danger: #b42318;
 }
 
@@ -28,8 +28,13 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -51,12 +56,12 @@ a {
 }
 
 ::selection {
-  background: rgba(17, 24, 39, 0.18);
+  background: rgba(47, 128, 237, 0.18);
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
 }
 
 ::-webkit-scrollbar-track {
@@ -64,10 +69,26 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c5ccd7;
+  background: #c7ced8;
   border: 2px solid #eef1f5;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #98a2b3;
+  background: #9aa4b2;
+}
+
+.recharts-default-tooltip {
+  border: 1px solid #dfe4ea !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+.recharts-legend-item-text,
+.recharts-text {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+.font-numeric {
+  font-variant-numeric: tabular-nums;
 }

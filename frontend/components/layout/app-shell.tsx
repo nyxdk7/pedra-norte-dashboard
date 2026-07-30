@@ -18,31 +18,11 @@ type AppShellProps = {
 };
 
 const mobileMenuItems = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Contratos",
-    href: "/contratos",
-    icon: ClipboardList,
-  },
-  {
-    label: "Medições",
-    href: "/medicoes",
-    icon: FileSpreadsheet,
-  },
-  {
-    label: "Histórico",
-    href: "/historico",
-    icon: History,
-  },
-  {
-    label: "Config.",
-    href: "/configuracoes",
-    icon: Settings,
-  },
+  { label: "Início", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Contratos", href: "/contratos", icon: ClipboardList },
+  { label: "Medições", href: "/medicoes", icon: FileSpreadsheet },
+  { label: "Histórico", href: "/historico", icon: History },
+  { label: "Ajustes", href: "/configuracoes", icon: Settings },
 ];
 
 export function AppShell({ children }: AppShellProps) {
@@ -50,7 +30,7 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#f3f5f8]">
+    <div className="min-h-screen bg-[#f5f7fa]">
       <div className="hidden lg:block">
         <AppSidebar
           collapsed={sidebarCollapsed}
@@ -59,14 +39,14 @@ export function AppShell({ children }: AppShellProps) {
       </div>
 
       <main
-        className={`min-h-screen pb-24 transition-[padding] duration-300 lg:pb-0 ${
-          sidebarCollapsed ? "lg:pl-[78px]" : "lg:pl-[308px]"
+        className={`min-h-screen pb-20 transition-[padding] duration-200 lg:pb-0 ${
+          sidebarCollapsed ? "lg:pl-[72px]" : "lg:pl-[242px]"
         }`}
       >
         {children}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white shadow-[0_-8px_24px_rgba(15,23,42,0.08)] lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white lg:hidden">
         <div className="grid grid-cols-5">
           {mobileMenuItems.map((item) => {
             const Icon = item.icon;
@@ -77,13 +57,13 @@ export function AppShell({ children }: AppShellProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex h-[74px] flex-col items-center justify-center gap-1 text-[11px] font-bold transition ${
+                className={`flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-medium transition ${
                   active
-                    ? "bg-slate-950 text-white"
-                    : "text-slate-500 hover:text-slate-950"
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
                 <span>{item.label}</span>
               </Link>
             );

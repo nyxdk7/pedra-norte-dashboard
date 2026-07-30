@@ -5,8 +5,8 @@ export default function MedicoesPage() {
   return (
     <>
       <AppHeader
-        title="Acompanhamento de medições"
-        subtitle="Visualize pendências, etapas atuais e valores financeiros com prioridade para os registros mais recentes."
+        title="Medições"
+        subtitle="Acompanhe pendências, etapas e valores dos registros mais recentes"
         section="Medições"
       />
 

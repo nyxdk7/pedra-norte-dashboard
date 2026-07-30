@@ -96,15 +96,15 @@ export function AdministradorClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="space-y-4 px-4 py-4 sm:px-6 lg:px-7">
+      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex items-center gap-4">
           <div className="flex h-11 w-11 items-center justify-center border border-slate-200 bg-slate-50 text-slate-800">
             <ShieldCheck className="h-5 w-5" />
           </div>
 
           <div>
-            <h2 className="text-base font-black text-slate-950">
+            <h2 className="text-base font-semibold text-slate-950">
               Administração de usuários
             </h2>
 
@@ -118,12 +118,12 @@ export function AdministradorClient() {
       <section className="grid gap-6 xl:grid-cols-[420px_1fr]">
         <form
           onSubmit={handleSubmit}
-          className="border border-slate-200 bg-white p-5 shadow-sm"
+          className="rounded-md border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
         >
           <div className="mb-5 flex items-center gap-3">
             <UserPlus className="h-5 w-5 text-slate-700" />
 
-            <h3 className="text-sm font-black uppercase tracking-[0.18em] text-slate-950">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-slate-950">
               Novo usuário
             </h3>
           </div>
@@ -142,7 +142,7 @@ export function AdministradorClient() {
             )}
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
                 Nome
               </label>
 
@@ -155,7 +155,7 @@ export function AdministradorClient() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
                 Usuário
               </label>
 
@@ -169,7 +169,7 @@ export function AdministradorClient() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
                 Senha temporária
               </label>
 
@@ -197,7 +197,7 @@ export function AdministradorClient() {
             <button
               type="submit"
               disabled={salvando}
-              className="flex h-11 w-full items-center justify-center gap-2 bg-slate-950 px-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-11 w-full items-center justify-center gap-2 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save className="h-4 w-4" />
               {salvando ? "Criando..." : "Criar usuário"}
@@ -205,10 +205,10 @@ export function AdministradorClient() {
           </div>
         </form>
 
-        <section className="border border-slate-200 bg-white shadow-sm">
+        <section className="rounded-md border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h3 className="text-base font-black text-slate-950">
+              <h3 className="text-base font-semibold text-slate-950">
                 Usuários cadastrados
               </h3>
 
@@ -233,7 +233,7 @@ export function AdministradorClient() {
             <div className="overflow-x-auto">
               <table className="min-w-full border-collapse text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                  <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
                     <th className="px-4 py-3">Nome</th>
                     <th className="px-4 py-3">Usuário</th>
                     <th className="px-4 py-3">Perfil</th>

@@ -18,76 +18,76 @@ export const CHART_PALETTES: ChartPalette[] = [
   {
     id: "msm-industrial",
     nome: "MSM Industrial",
-    descricao: "Paleta principal, sóbria e institucional.",
+    descricao: "Azul corporativo com cores auxiliares equilibradas.",
     cores: [
-      "#111827",
-      "#334155",
-      "#475569",
+      "#2f80ed",
+      "#56b4d3",
+      "#3ba272",
+      "#f2a93b",
+      "#7b61ff",
+      "#e76f51",
       "#64748b",
-      "#1e3a8a",
-      "#1d4ed8",
-      "#0369a1",
-      "#0f766e",
+      "#14b8a6",
     ],
   },
   {
     id: "azul-corporativo",
     nome: "Azul corporativo",
-    descricao: "Mais limpa, moderna e com foco administrativo.",
+    descricao: "Tons de azul limpos para relatórios administrativos.",
     cores: [
-      "#0f172a",
-      "#1e3a8a",
-      "#1d4ed8",
-      "#2563eb",
-      "#0284c7",
-      "#0369a1",
-      "#075985",
-      "#334155",
+      "#1f5fae",
+      "#2f80ed",
+      "#4c9aff",
+      "#56b4d3",
+      "#3c78a8",
+      "#6b8fb3",
+      "#7b61ff",
+      "#64748b",
     ],
   },
   {
     id: "verde-engenharia",
     nome: "Verde engenharia",
-    descricao: "Boa para obras, produção e leitura operacional.",
+    descricao: "Verdes e azuis suaves para acompanhamento operacional.",
     cores: [
-      "#064e3b",
-      "#065f46",
-      "#047857",
-      "#059669",
-      "#0f766e",
-      "#0d9488",
-      "#334155",
-      "#475569",
+      "#2e7d32",
+      "#3ba272",
+      "#5aae61",
+      "#14b8a6",
+      "#56b4d3",
+      "#2f80ed",
+      "#8aa16f",
+      "#64748b",
     ],
   },
   {
     id: "cinza-tecnico",
     nome: "Cinza técnico",
-    descricao: "Visual neutro, discreto e mais documental.",
+    descricao: "Paleta neutra para leitura documental e técnica.",
     cores: [
-      "#020617",
-      "#111827",
-      "#1f2937",
-      "#374151",
-      "#4b5563",
-      "#64748b",
-      "#94a3b8",
       "#475569",
+      "#64748b",
+      "#7c8798",
+      "#94a3b8",
+      "#5f7590",
+      "#78909c",
+      "#a0aec0",
+      "#334155",
     ],
   },
   {
     id: "alto-contraste",
     nome: "Alto contraste",
-    descricao: "Cores mais fortes para apresentação e projetor.",
+    descricao: "Cores distintas para projetores e apresentações.",
     cores: [
-      "#111827",
-      "#dc2626",
       "#2563eb",
       "#16a34a",
-      "#ca8a04",
-      "#9333ea",
+      "#d97706",
+      "#7c3aed",
+      "#dc2626",
       "#0891b2",
       "#ea580c",
+      "#475569",
     ],
   },
 ];
@@ -97,36 +97,20 @@ export function getDefaultChartPalette() {
 }
 
 export function getChartPaletteById(id: string | null | undefined) {
-  return (
-    CHART_PALETTES.find((palette) => palette.id === id) ||
-    getDefaultChartPalette()
-  );
+  return CHART_PALETTES.find((palette) => palette.id === id) || getDefaultChartPalette();
 }
 
 export function getStoredChartPalette() {
-  if (typeof window === "undefined") {
-    return getDefaultChartPalette();
-  }
-
-  const storedPaletteId = window.localStorage.getItem(
-    CHART_PALETTE_STORAGE_KEY,
-  );
-
-  return getChartPaletteById(storedPaletteId);
+  if (typeof window === "undefined") return getDefaultChartPalette();
+  return getChartPaletteById(window.localStorage.getItem(CHART_PALETTE_STORAGE_KEY));
 }
 
 export function setStoredChartPalette(id: ChartPaletteId) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
+  if (typeof window === "undefined") return;
   window.localStorage.setItem(CHART_PALETTE_STORAGE_KEY, id);
-
   window.dispatchEvent(
     new CustomEvent("msm-industrial-chart-palette-changed", {
-      detail: {
-        paletteId: id,
-      },
+      detail: { paletteId: id },
     }),
   );
 }

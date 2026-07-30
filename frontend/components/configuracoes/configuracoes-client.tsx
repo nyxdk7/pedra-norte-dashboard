@@ -69,8 +69,8 @@ export function ConfiguracoesClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="space-y-4 px-4 py-4 sm:px-6 lg:px-7">
+      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ export function ConfiguracoesClient() {
               </div>
 
               <div>
-                <h2 className="text-base font-black text-slate-950">
+                <h2 className="text-base font-semibold text-slate-950">
                   Paleta de cores dos gráficos
                 </h2>
 
@@ -100,7 +100,7 @@ export function ConfiguracoesClient() {
               !temAlteracaoPendente ||
               !podeAdministrar
             }
-            className="flex h-11 items-center justify-center gap-2 bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="flex h-11 items-center justify-center gap-2 bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             <Save className="h-4 w-4" />
             {salvando ? "Salvando..." : "Salvar paleta"}
@@ -110,12 +110,12 @@ export function ConfiguracoesClient() {
         <div className="mt-5 border border-slate-200 bg-slate-50 p-4">
           <p className="text-sm font-semibold text-slate-700">
             Paleta ativa no sistema:{" "}
-            <span className="font-black text-slate-950">{palette.nome}</span>
+            <span className="font-semibold text-slate-950">{palette.nome}</span>
           </p>
 
           <p className="mt-1 text-sm font-semibold text-slate-700">
             Paleta selecionada:{" "}
-            <span className="font-black text-slate-950">
+            <span className="font-semibold text-slate-950">
               {paletteSelecionada.nome}
             </span>
           </p>
@@ -156,7 +156,7 @@ export function ConfiguracoesClient() {
               key={item.id}
               type="button"
               onClick={() => setPaletteSelecionadaId(item.id)}
-              className={`border bg-white p-5 text-left shadow-sm transition hover:border-slate-400 hover:bg-slate-50 ${
+              className={`border bg-white p-5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-slate-400 hover:bg-slate-50 ${
                 selecionada
                   ? "border-slate-950 ring-2 ring-slate-950/10"
                   : "border-slate-200"
@@ -164,7 +164,7 @@ export function ConfiguracoesClient() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-[0.18em] text-slate-950">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-slate-950">
                     {item.nome}
                   </h3>
 
@@ -173,7 +173,7 @@ export function ConfiguracoesClient() {
                   </p>
 
                   {ativa && (
-                    <p className="mt-2 text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
+                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
                       Paleta ativa
                     </p>
                   )}
@@ -207,7 +207,7 @@ export function ConfiguracoesClient() {
                 {item.cores.map((cor) => (
                   <span
                     key={`${item.id}-tag-${cor}`}
-                    className="border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-500"
+                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-500"
                   >
                     {cor}
                   </span>
@@ -218,8 +218,8 @@ export function ConfiguracoesClient() {
         })}
       </section>
 
-      <section className="border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-black text-slate-950">Como funciona</h2>
+      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+        <h2 className="text-base font-semibold text-slate-950">Como funciona</h2>
 
         <div className="mt-3 grid gap-3 text-sm text-slate-600 lg:grid-cols-3">
           <div className="border border-slate-200 bg-slate-50 p-4">

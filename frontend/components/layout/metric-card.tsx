@@ -14,27 +14,25 @@ export function MetricCard({
   icon: Icon,
 }: MetricCardProps) {
   return (
-    <article className="min-w-0 border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex min-w-0 items-start justify-between gap-5">
+    <article className="min-w-0 rounded-md border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="flex min-w-0 items-start gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+          <p className="truncate text-[11px] font-medium uppercase tracking-[0.08em] text-slate-500">
             {label}
           </p>
-
           <p
             title={value}
-            className="mt-4 max-w-full break-words text-[clamp(1.45rem,2vw,2rem)] font-black leading-[1.08] tracking-[-0.045em] text-slate-950"
+            className="font-numeric mt-2 truncate text-[clamp(1.18rem,1.45vw,1.55rem)] font-semibold leading-tight tracking-[-0.02em] text-slate-900"
           >
             {value}
           </p>
-
-          <p className="mt-4 text-sm leading-5 text-slate-500">
+          <p className="mt-2 truncate text-[12px] text-slate-500" title={description}>
             {description}
           </p>
         </div>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-slate-950 text-white">
-          <Icon size={23} strokeWidth={2} />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-700">
+          <Icon size={18} strokeWidth={1.8} />
         </div>
       </div>
     </article>
