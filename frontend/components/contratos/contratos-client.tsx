@@ -47,20 +47,6 @@ function montarOpcoesUnicas(valores: string[], prefixo = "") {
   }));
 }
 
-function formatarData(data: string | null) {
-  if (!data) {
-    return "-";
-  }
-
-  const partes = data.split("-");
-
-  if (partes.length === 3) {
-    return `${partes[2]}/${partes[1]}/${partes[0]}`;
-  }
-
-  return data;
-}
-
 function statusBadge(status: string) {
   const texto = status || "Sem status";
   const normalizado = texto.toLowerCase();
@@ -125,34 +111,24 @@ function ContratoCardMobile({ contrato }: ContratoCardMobileProps) {
         {statusBadge(contrato.status)}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-sm">
+      <div className="space-y-3 text-sm">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
             Empresa
           </p>
 
-          <p className="mt-1 font-semibold text-slate-800">
+          <p className="mt-1 font-medium text-slate-800">
             {contrato.empresa || "-"}
           </p>
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-            Valor
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+            Objeto
           </p>
 
-          <p className="mt-1 font-semibold text-slate-950">
-            {formatarMoeda(contrato.valor_total)}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-            Execução
-          </p>
-
-          <p className="mt-1 font-semibold text-slate-950">
-            {formatarPercentual(contrato.percentual_executado)}
+          <p className="mt-1 text-slate-700">
+            {contrato.objeto || "-"}
           </p>
         </div>
       </div>
@@ -225,14 +201,22 @@ export function ContratosClient() {
   );
 
   useEffect(() => {
-    carregarOpcoesFiltros();
+    const timeoutId = window.setTimeout(() => {
+      void carregarOpcoesFiltros();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [carregarOpcoesFiltros]);
 
   useEffect(() => {
-    carregarContratos({
-      contrato,
-      status,
-    });
+    const timeoutId = window.setTimeout(() => {
+      void carregarContratos({
+        contrato,
+        status,
+      });
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [contrato, status, carregarContratos]);
 
   function limparFiltros() {
@@ -470,11 +454,7 @@ export function ContratosClient() {
                   <th className="px-4 py-3">Empresa</th>
                   <th className="px-4 py-3">Objeto</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Início</th>
-                  <th className="px-4 py-3">Fim</th>
-                  <th className="px-4 py-3">Valor total</th>
-                  <th className="px-4 py-3">Execução</th>
-                  <th className="px-4 py-3">Ações</th>
+                  <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
               </thead>
 
@@ -504,23 +484,7 @@ export function ContratosClient() {
                           {statusBadge(item.status)}
                         </td>
 
-                        <td className="px-4 py-3">
-                          {formatarData(item.data_inicio)}
-                        </td>
-
-                        <td className="px-4 py-3">
-                          {formatarData(item.data_fim)}
-                        </td>
-
-                        <td className="px-4 py-3 font-semibold text-slate-950">
-                          {formatarMoeda(item.valor_total)}
-                        </td>
-
-                        <td className="px-4 py-3 font-semibold text-slate-950">
-                          {formatarPercentual(item.percentual_executado)}
-                        </td>
-
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-right">
                           <Link
                             href={hrefDetalhe}
                             className="inline-flex h-9 items-center justify-center gap-2 border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
@@ -535,7 +499,7 @@ export function ContratosClient() {
                 ) : (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={5}
                       className="px-4 py-8 text-center text-sm text-slate-500"
                     >
                       Nenhum contrato encontrado.
