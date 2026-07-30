@@ -14,12 +14,20 @@ type ApiErrorData = {
   erro?: string;
 };
 
-function montarQueryString(filtros: Record<string, string | undefined>) {
+type QueryValue = string | number | boolean | null | undefined;
+
+function montarQueryString(filtros: Record<string, QueryValue>) {
   const params = new URLSearchParams();
 
   Object.entries(filtros).forEach(([chave, valor]) => {
-    if (valor && valor.trim()) {
-      params.set(chave, valor.trim());
+    if (valor === undefined || valor === null) {
+      return;
+    }
+
+    const texto = String(valor).trim();
+
+    if (texto) {
+      params.set(chave, texto);
     }
   });
 
@@ -288,18 +296,76 @@ export type MedicoesCards = {
   total_a_processar: number;
 };
 
+export type MedicoesVisao =
+  | "pendentes"
+  | "recentes"
+  | "pagas"
+  | "historico";
+
+export type MedicoesResumoSituacao = {
+  situacao: string;
+  total: number;
+  total_medido: number;
+  total_liquidado: number;
+  total_pago: number;
+  total_faturado: number;
+  total_a_processar: number;
+};
+
+export type MedicoesGrupoSituacao = MedicoesResumoSituacao & {
+  items: Medicao[];
+  total_exibido: number;
+};
+
+export type MedicoesOpcaoVisao = {
+  value: MedicoesVisao;
+  label: string;
+  total: number;
+};
+
+export type MedicoesFiltrosAplicados = {
+  contrato: string;
+  situacao: string;
+  mes_ano: string;
+  visao: MedicoesVisao;
+  limite: number;
+};
+
+export type MedicoesMeta = {
+  total_base: number;
+  total_pendentes: number;
+  total_pagas: number;
+  total_disponivel: number;
+  total_exibido: number;
+  ocultas_por_limite: number;
+  pagas_ocultas: number;
+  ordenacao: string;
+};
+
 export type MedicoesResponse = {
   results: Medicao[];
   cards: MedicoesCards;
   graficos: {
     evolucao_mensal: GraficoEvolucaoMensalItem[];
   };
+  resumo_situacoes: MedicoesResumoSituacao[];
+  grupos_situacao: MedicoesGrupoSituacao[];
+  filtros: MedicoesFiltrosAplicados;
+  opcoes: {
+    situacoes: string[];
+    meses: string[];
+    visoes: MedicoesOpcaoVisao[];
+  };
+  meta: MedicoesMeta;
   permissions: UsuarioPermissoes;
 };
 
 export type MedicoesRequestFiltros = {
   contrato?: string;
   situacao?: string;
+  mes_ano?: string;
+  visao?: MedicoesVisao;
+  limite?: number;
 };
 
 export type ContratoDetalheResponse = {
@@ -419,6 +485,9 @@ export async function buscarMedicoes(filtros: MedicoesRequestFiltros = {}) {
   const queryString = montarQueryString({
     contrato: filtros.contrato,
     situacao: filtros.situacao,
+    mes_ano: filtros.mes_ano,
+    visao: filtros.visao,
+    limite: filtros.limite,
   });
 
   return apiRequest<MedicoesResponse>(`/medicoes/${queryString}`);
@@ -444,6 +513,8 @@ export async function exportarMedicoesExcel(
   const queryString = montarQueryString({
     contrato: filtros.contrato,
     situacao: filtros.situacao,
+    mes_ano: filtros.mes_ano,
+    visao: filtros.visao,
   });
 
   return baixarArquivo(

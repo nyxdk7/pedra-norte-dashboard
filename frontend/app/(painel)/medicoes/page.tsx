@@ -6,7 +6,7 @@ export default function MedicoesPage() {
     <>
       <AppHeader
         title="Medições"
-        subtitle="Acompanhamento financeiro das medições importadas da planilha"
+        subtitle="Pendências recentes organizadas por etapa, com consulta rápida no celular"
         section="Medições"
       />
 
