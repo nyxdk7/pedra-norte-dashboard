@@ -119,23 +119,25 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-800 bg-slate-950 text-white transition-all duration-300 ${
-        collapsed ? "w-[76px]" : "w-[280px]"
+      className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-800 bg-[#111827] text-white transition-[width] duration-300 ${
+        collapsed ? "w-[78px]" : "w-[308px]"
       }`}
     >
-      <div className="flex h-[104px] items-center justify-between border-b border-slate-800 px-4">
+      <div className="flex min-h-[112px] items-center justify-between border-b border-slate-800 px-4">
         {collapsed ? (
-          <div className="flex h-11 w-11 items-center justify-center border border-slate-700 bg-slate-900 text-sm font-black text-white">
+          <div className="flex h-11 w-11 items-center justify-center border border-slate-600 bg-slate-950 text-sm font-black text-white">
             MS
           </div>
         ) : (
-          <Brand />
+          <div className="min-w-0">
+            <Brand />
+          </div>
         )}
 
         <button
           type="button"
           onClick={onToggle}
-          className="flex h-9 w-9 items-center justify-center border border-slate-700 text-slate-300 transition hover:bg-slate-900 hover:text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center text-slate-400 transition hover:bg-slate-800 hover:text-white"
           aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
         >
           {collapsed ? (
@@ -146,29 +148,36 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-2 px-3 py-5">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const active =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+      <nav className="flex-1 overflow-y-auto px-3 py-5">
+        {!collapsed && (
+          <p className="mb-3 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            Navegação
+          </p>
+        )}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? item.label : undefined}
-              className={`flex h-12 items-center gap-3 px-3 text-sm font-semibold transition ${
-                active
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-300 hover:bg-slate-900 hover:text-white"
-              } ${collapsed ? "justify-center" : ""}`}
-            >
-              <Icon className="h-5 w-5 shrink-0" />
+        <div className="space-y-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={collapsed ? item.label : undefined}
+                className={`flex h-14 items-center gap-4 px-4 text-[15px] font-semibold transition ${
+                  active
+                    ? "bg-white text-slate-950 shadow-sm"
+                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                } ${collapsed ? "justify-center px-0" : ""}`}
+              >
+                <Icon className="h-5 w-5 shrink-0" strokeWidth={1.9} />
+                {!collapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       <div className="border-t border-slate-800 p-4">
@@ -177,7 +186,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             collapsed ? "justify-center" : ""
           }`}
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-slate-800 text-xs font-black text-white">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-slate-950 text-xs font-black text-white ring-1 ring-slate-700">
             {obterIniciais(nomeUsuario)}
           </div>
 
@@ -186,8 +195,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
               <p className="truncate text-sm font-black text-white">
                 {nomeUsuario}
               </p>
-
-              <p className="truncate text-xs text-slate-400">{perfilUsuario}</p>
+              <p className="mt-0.5 truncate text-xs text-slate-400">
+                {perfilUsuario}
+              </p>
             </div>
           )}
         </div>
@@ -196,12 +206,11 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
           type="button"
           onClick={handleSair}
           title={collapsed ? "Sair" : undefined}
-          className={`flex h-11 w-full items-center gap-3 border border-slate-700 px-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-900 hover:text-white ${
-            collapsed ? "justify-center" : "justify-center"
+          className={`flex h-12 w-full items-center justify-center gap-3 border border-slate-700 px-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white ${
+            collapsed ? "px-0" : ""
           }`}
         >
           <LogOut className="h-4 w-4" />
-
           {!collapsed && "Sair"}
         </button>
       </div>

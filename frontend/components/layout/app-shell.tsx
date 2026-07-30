@@ -50,7 +50,7 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-[#f3f5f8]">
       <div className="hidden lg:block">
         <AppSidebar
           collapsed={sidebarCollapsed}
@@ -59,8 +59,8 @@ export function AppShell({ children }: AppShellProps) {
       </div>
 
       <main
-        className={`min-h-screen pb-24 transition-all duration-300 lg:pb-0 ${
-          sidebarCollapsed ? "lg:pl-[76px]" : "lg:pl-[280px]"
+        className={`min-h-screen pb-24 transition-[padding] duration-300 lg:pb-0 ${
+          sidebarCollapsed ? "lg:pl-[78px]" : "lg:pl-[308px]"
         }`}
       >
         {children}
@@ -77,14 +77,13 @@ export function AppShell({ children }: AppShellProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex h-[76px] flex-col items-center justify-center gap-1 text-xs font-black transition ${
+                className={`flex h-[74px] flex-col items-center justify-center gap-1 text-[11px] font-bold transition ${
                   active
-                    ? "text-slate-950"
+                    ? "bg-slate-950 text-white"
                     : "text-slate-500 hover:text-slate-950"
                 }`}
               >
-                <Icon className="h-6 w-6" />
-
+                <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
               </Link>
             );

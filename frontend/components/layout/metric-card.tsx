@@ -14,8 +14,8 @@ export function MetricCard({
   icon: Icon,
 }: MetricCardProps) {
   return (
-    <article className="min-w-0 border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex min-w-0 items-start justify-between gap-4">
+    <article className="min-w-0 border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex min-w-0 items-start justify-between gap-5">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
             {label}
@@ -23,21 +23,19 @@ export function MetricCard({
 
           <p
             title={value}
-            className="mt-4 max-w-full break-words text-2xl font-bold leading-tight tracking-[-0.04em] text-slate-950 xl:text-[26px]"
+            className="mt-4 max-w-full break-words text-[clamp(1.45rem,2vw,2rem)] font-black leading-[1.08] tracking-[-0.045em] text-slate-950"
           >
             {value}
           </p>
 
-          <p className="mt-3 text-sm leading-5 text-slate-500">
+          <p className="mt-4 text-sm leading-5 text-slate-500">
             {description}
           </p>
         </div>
 
-        <Icon
-          size={25}
-          strokeWidth={2}
-          className="mt-1 shrink-0 text-[#111827]"
-        />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-slate-950 text-white">
+          <Icon size={23} strokeWidth={2} />
+        </div>
       </div>
     </article>
   );
